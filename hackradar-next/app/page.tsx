@@ -47,9 +47,13 @@ export default function Home() {
     content?: string;
     description?: string;
     createdAt: string;
+    text?: string;
+    url?: string;
     files?: Array<{
       name: string;
       type: string;
+      size: number;
+      data: string;
       isImage: boolean;
     }>;
   }>>([]);
@@ -103,30 +107,16 @@ export default function Home() {
     }
   }, []);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    setFiles(prev => [...prev, ...acceptedFiles]);
-    toast.success(`${acceptedFiles.length} file(s) added`);
-  }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'application/pdf': ['.pdf'],
-      'image/*': ['.png', '.jpg', '.jpeg', '.gif'],
-      'application/msword': ['.doc'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-      'text/*': ['.txt', '.md', '.json'],
-    },
-    maxSize: 10485760, // 10MB
-  });
 
-  const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
-    toast.success('File removed');
-  };
 
-  const handleLoginSuccess = async (credentialResponse: any) => {
+  const handleLoginSuccess = async (credentialResponse: { credential?: string }) => {
     try {
+      if (!credentialResponse.credential) {
+        toast.error('No credential received');
+        return;
+      }
+      
       const decoded = JSON.parse(atob(credentialResponse.credential.split('.')[1]));
       const userData: User = {
         email: decoded.email,
@@ -164,13 +154,10 @@ export default function Home() {
 
   const handleLogout = () => {
     setUser(null);
-    setShowDashboard(false);
     setProject(null);
     setTimeline([]);
-    setFiles([]);
     setTeamName('');
     setEvaluation(null);
-    setUpdateText('');
     localStorage.removeItem('hackradar_user');
     localStorage.removeItem('hackradar_project');
     toast.success('Logged out successfully');
@@ -222,7 +209,7 @@ export default function Home() {
   };
 
   const handleUpdateTeamName = async () => {
-    if (!editedTeamName.trim() || editedTeamName === project.teamName) {
+    if (!project || !editedTeamName.trim() || editedTeamName === project.teamName) {
       setIsEditingTeamName(false);
       return;
     }
@@ -243,7 +230,7 @@ export default function Home() {
   };
 
   const handleUpdateWebsiteUrl = async () => {
-    if (editedWebsiteUrl === websiteUrl) {
+    if (!project || editedWebsiteUrl === websiteUrl) {
       setIsEditingWebsite(false);
       return;
     }
@@ -273,135 +260,7 @@ export default function Home() {
     }
   };
 
-  const handleSubmitUpdate = async () => {
-    if (!updateText.trim()) {
-      toast.error('Please enter an update');
-      return;
-    }
 
-    if (!project) {
-      toast.error('Please create a team first');
-      return;
-    }
-
-    setIsSubmittingUpdate(true);
-    try {
-      const formData = new FormData();
-      formData.append('projectId', project._id);
-      formData.append('type', 'text');
-      formData.append('content', updateText);
-      formData.append('description', updateText);
-      
-      await fetch('/api/timeline', {
-        method: 'POST',
-        body: formData
-      });
-
-      // Reload timeline
-      const timelineRes = await fetch(`/api/timeline?projectId=${project._id}`);
-      const timelineData = await timelineRes.json();
-      setTimeline(timelineData);
-      
-      // Get fresh assessment
-      const assessRes = await fetch('/api/assess', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: project._id })
-      });
-
-      const assessData = await assessRes.json();
-      setEvaluation(assessData.assessment);
-      
-      toast.success('Update submitted!');
-      setUpdateText(''); // Clear the input
-    } catch (error) {
-      console.error('Error submitting update:', error);
-      toast.error('Failed to submit update. Please try again.');
-    } finally {
-      setIsSubmittingUpdate(false);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!teamName.trim()) {
-      toast.error('Please enter your team name');
-      return;
-    }
-
-    setIsAnalyzing(true);
-
-    try {
-      let currentProject = project;
-      
-      // Create project if not exists
-      if (!currentProject) {
-        const projectRes = await fetch('/api/projects', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ teamName, email: user?.email || 'test@test.com' })
-        });
-        
-        const projectData = await projectRes.json();
-        if (projectData.error) {
-          // Project exists, try to get it
-          const getRes = await fetch('/api/projects');
-          const projects = await getRes.json();
-          const existing = projects.find((p: { teamName: string; _id: string }) => p.teamName === teamName);
-          if (existing) {
-            currentProject = existing;
-            setProject(existing);
-          }
-        } else {
-          currentProject = projectData.project;
-          setProject(projectData.project);
-        }
-      }
-
-      // Add timeline entries for files
-      if (currentProject && files.length > 0) {
-        for (const file of files) {
-          const formData = new FormData();
-          formData.append('projectId', currentProject._id);
-          formData.append('type', file.type.startsWith('image/') ? 'image' : 'file');
-          formData.append('file', file);
-          formData.append('description', `Uploaded ${file.name}`);
-          
-          await fetch('/api/timeline', {
-            method: 'POST',
-            body: formData
-          });
-        }
-      }
-
-      // Get timeline entries
-      if (currentProject) {
-        const timelineRes = await fetch(`/api/timeline?projectId=${currentProject._id}`);
-        const timelineData = await timelineRes.json();
-        setTimeline(timelineData);
-      }
-
-      // Get assessment
-      if (currentProject) {
-        const assessRes = await fetch('/api/assess', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectId: currentProject._id })
-        });
-
-        const assessData = await assessRes.json();
-        setEvaluation(assessData.assessment);
-      }
-      
-      toast.success('Analysis complete!');
-      setFiles([]); // Clear files after successful submission
-
-    } catch (error) {
-      console.error('Submission error:', error);
-      toast.error('Failed to submit. Please try again.');
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>

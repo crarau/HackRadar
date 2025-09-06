@@ -5,7 +5,7 @@ import { FiZap, FiUploadCloud, FiTrendingUp, FiAward } from 'react-icons/fi';
 import './LandingPage.css';
 
 interface LandingPageProps {
-  onLogin: (credentialResponse: { credential: string }) => void;
+  onLogin: (credentialResponse: { credential?: string }) => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {

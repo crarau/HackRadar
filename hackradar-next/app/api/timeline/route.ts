@@ -113,7 +113,23 @@ export async function POST(request: NextRequest) {
     }
     
     // Build comprehensive entry
-    const entry = {
+    const entry: {
+      projectId: string;
+      type: string;
+      text: string;
+      url: string;
+      files: Array<{
+        name: string;
+        type: string;
+        size: number;
+        data: string;
+        isImage: boolean;
+      }>;
+      fileCount: number;
+      createdAt: Date;
+      description?: string;
+      content?: string;
+    } = {
       projectId,
       type: 'update',
       text: text || '',
