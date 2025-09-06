@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { FiUpload, FiFile, FiX, FiLogOut, FiRefreshCw, FiTrendingUp } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import { User, Submission, Evaluation } from '../types';
+import { User, Evaluation } from '../types';
 import './Dashboard.css';
 
 interface DashboardProps {
@@ -16,7 +16,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [teamName, setTeamName] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles(prev => [...prev, ...acceptedFiles]);
@@ -130,7 +129,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             <span>{user.name}</span>
           </div>
           <button onClick={onLogout} className="logout-btn">
-            <FiLogOut /> Logout
+            {React.createElement(FiLogOut as any, { size: 16 })} Logout
           </button>
         </div>
       </header>
@@ -155,7 +154,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             className={`dropzone ${isDragActive ? 'active' : ''}`}
           >
             <input {...getInputProps()} />
-            <FiUpload className="upload-icon" />
+            {React.createElement(FiUpload as any, { className: "upload-icon" })}
             <p>Drag & drop files here, or click to select</p>
             <span className="file-types">
               Supports: PDF, Images, DOC, DOCX, TXT, MD
@@ -172,7 +171,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                   animate={{ opacity: 1, x: 0 }}
                   className="file-item"
                 >
-                  <FiFile className="file-icon" />
+                  {React.createElement(FiFile as any, { className: "file-icon" })}
                   <span className="file-name">{file.name}</span>
                   <span className="file-size">
                     {(file.size / 1024 / 1024).toFixed(2)} MB
@@ -181,7 +180,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                     onClick={() => removeFile(index)}
                     className="remove-file"
                   >
-                    <FiX />
+                    {React.createElement(FiX as any)}
                   </button>
                 </motion.div>
               ))}
@@ -195,12 +194,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           >
             {isAnalyzing ? (
               <>
-                <FiRefreshCw className="spinning" />
+                {React.createElement(FiRefreshCw as any, { className: "spinning" })}
                 Analyzing...
               </>
             ) : (
               <>
-                <FiTrendingUp />
+                {React.createElement(FiTrendingUp as any)}
                 Get AI Evaluation
               </>
             )}
