@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
+import { EvaluationService } from '@/lib/evaluation/EvaluationService';
 
 // POST add entry to timeline
 export async function POST(request: NextRequest) {
@@ -158,16 +159,81 @@ export async function POST(request: NextRequest) {
     
     const result = await db.collection('timeline').insertOne(entry);
     
-    // Update project's updatedAt
-    await db.collection('projects').updateOne(
-      { _id: new ObjectId(projectId) },
-      { $set: { updatedAt: new Date() } }
-    );
+    // Trigger evaluation for this submission
+    let evaluationResult = null;
+    let scoreUpdateEntry = null;
+    
+    try {
+      const evaluationService = new EvaluationService(db);
+      const evaluation = await evaluationService.evaluateSubmission(projectId, {
+        text,
+        files: files.map(f => ({
+          name: f.name,
+          type: f.type,
+          size: f.size
+        })),
+        url,
+        userMessage: text // Using text as user message for now
+      });
+      
+      evaluationResult = evaluation;
+      
+      // Add metadata to the entry we just created
+      await db.collection('timeline').updateOne(
+        { _id: result.insertedId },
+        { 
+          $set: { 
+            metadata: evaluation.metadata,
+            evaluationComplete: true 
+          } 
+        }
+      );
+      
+      // Create a score update entry if there's a delta
+      if (evaluation.delta && evaluation.delta.total_change !== 0) {
+        const direction = evaluation.delta.direction;
+        const icon = direction === 'up' ? '📈' : direction === 'down' ? '📉' : '➡️';
+        const arrow = direction === 'up' ? '↗️' : direction === 'down' ? '↘️' : '→';
+        const sign = evaluation.delta.total_change > 0 ? '+' : '';
+        
+        scoreUpdateEntry = {
+          projectId,
+          createdAt: new Date(Date.now() + 1000), // 1 second after main entry
+          text: `📊 Score Update: ${evaluation.scores.final_score}/100 (${icon} ${sign}${evaluation.delta.total_change.toFixed(0)} points, ${arrow} ${evaluation.delta.percent_change.toFixed(1)}%)`,
+          metadata: {
+            type: 'score_update',
+            score: evaluation.scores.final_score,
+            delta: evaluation.delta,
+            changes: evaluation.metadata.evaluation.changes
+          }
+        };
+        
+        await db.collection('timeline').insertOne(scoreUpdateEntry);
+      }
+      
+      // Update project's updatedAt and current score
+      await db.collection('projects').updateOne(
+        { _id: new ObjectId(projectId) },
+        { 
+          $set: { 
+            updatedAt: new Date(),
+            currentScore: evaluation.scores.final_score,
+            lastEvaluation: evaluation.metadata.evaluation
+          } 
+        }
+      );
+      
+    } catch (evalError) {
+      console.error('Evaluation error (non-blocking):', evalError);
+      // Continue even if evaluation fails
+    }
     
     return NextResponse.json({
       success: true,
       entryId: result.insertedId,
-      entry: { ...entry, _id: result.insertedId }
+      entry: { ...entry, _id: result.insertedId },
+      evaluation: evaluationResult,
+      scoreUpdate: scoreUpdateEntry
     });
     
   } catch (error) {

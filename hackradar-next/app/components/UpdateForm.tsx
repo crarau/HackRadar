@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 interface UpdateFormProps {
   projectId: string;
   websiteUrl?: string;
-  onSubmit: (data: FormData) => Promise<void>;
+  onSubmit: (data: FormData) => Promise<unknown>;
 }
 
 export default function UpdateForm({ projectId, websiteUrl, onSubmit }: UpdateFormProps) {
@@ -107,12 +107,27 @@ export default function UpdateForm({ projectId, websiteUrl, onSubmit }: UpdateFo
       formData.append('fileCount', files.length.toString());
       formData.append('timestamp', new Date().toISOString());
       
-      await onSubmit(formData);
+      const result = await onSubmit(formData);
       
       // Clear form after successful submission
       setUpdateText('');
       setFiles([]);
-      toast.success('Update submitted successfully!');
+      
+      // Show success with score if available
+      const evalResult = result as { evaluation?: { scores?: { final_score?: number }; delta?: { total_change: number; direction: string } } };
+      if (evalResult?.evaluation?.scores?.final_score) {
+        const score = evalResult.evaluation.scores.final_score;
+        const delta = evalResult.evaluation?.delta;
+        if (delta && delta.total_change !== 0) {
+          const icon = delta.direction === 'up' ? '📈' : '📉';
+          const sign = delta.total_change > 0 ? '+' : '';
+          toast.success(`Scored ${score}/100 (${icon} ${sign}${delta.total_change} points)`);
+        } else {
+          toast.success(`Initial score: ${score}/100`);
+        }
+      } else {
+        toast.success('Update submitted successfully!');
+      }
     } catch (error) {
       console.error('Submission error:', error);
       toast.error('Failed to submit update');
@@ -189,7 +204,7 @@ export default function UpdateForm({ projectId, websiteUrl, onSubmit }: UpdateFo
         {isSubmitting ? (
           <>
             <FiRefreshCw className="spinning" />
-            Submitting Update...
+            🤖 Agents Evaluating...
           </>
         ) : (
           <>
