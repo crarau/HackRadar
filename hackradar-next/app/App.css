@@ -52,21 +52,21 @@ body {
   right: 0;
   bottom: 0;
   background: 
-    radial-gradient(500px circle at var(--x, 50%) var(--y, 50%), 
+    radial-gradient(400px circle at var(--x1) var(--y1), 
       rgba(0, 212, 255, 0.25) 0%, 
       rgba(0, 212, 255, 0.12) 25%, 
       rgba(0, 212, 255, 0.06) 50%, 
       transparent 75%),
-    radial-gradient(700px circle at var(--x2, 30%) var(--y2, 70%), 
-      rgba(30, 40, 80, 0.3) 0%, 
-      rgba(20, 30, 60, 0.15) 40%, 
+    radial-gradient(350px circle at var(--x2) var(--y2), 
+      rgba(0, 255, 136, 0.2) 0%, 
+      rgba(0, 200, 100, 0.1) 40%, 
       transparent 70%),
-    radial-gradient(350px circle at var(--x3, 70%) var(--y3, 30%), 
-      rgba(0, 150, 200, 0.18) 0%, 
-      rgba(0, 100, 150, 0.08) 40%, 
+    radial-gradient(300px circle at var(--x3) var(--y3), 
+      rgba(100, 150, 255, 0.15) 0%, 
+      rgba(50, 100, 200, 0.08) 40%, 
       transparent 60%);
-  animation: circularMotion 25s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   pointer-events: none;
+  transition: none;
 }
 
 .landing-page::after {
@@ -80,80 +80,7 @@ body {
   pointer-events: none;
 }
 
-@keyframes circularMotion {
-  0% {
-    --x: 50%;
-    --y: 20%;
-    --x2: 30%;
-    --y2: 70%;
-    --x3: 70%;
-    --y3: 30%;
-  }
-  12.5% {
-    --x: 71%;
-    --y: 29%;
-    --x2: 21%;
-    --y2: 79%;
-    --x3: 79%;
-    --y3: 21%;
-  }
-  25% {
-    --x: 80%;
-    --y: 50%;
-    --x2: 20%;
-    --y2: 80%;
-    --x3: 80%;
-    --y3: 20%;
-  }
-  37.5% {
-    --x: 71%;
-    --y: 71%;
-    --x2: 29%;
-    --y2: 71%;
-    --x3: 71%;
-    --y3: 29%;
-  }
-  50% {
-    --x: 50%;
-    --y: 80%;
-    --x2: 30%;
-    --y2: 50%;
-    --x3: 70%;
-    --y3: 50%;
-  }
-  62.5% {
-    --x: 29%;
-    --y: 71%;
-    --x2: 71%;
-    --y2: 29%;
-    --x3: 29%;
-    --y3: 71%;
-  }
-  75% {
-    --x: 20%;
-    --y: 50%;
-    --x2: 80%;
-    --y2: 20%;
-    --x3: 20%;
-    --y3: 80%;
-  }
-  87.5% {
-    --x: 29%;
-    --y: 29%;
-    --x2: 79%;
-    --y2: 21%;
-    --x3: 21%;
-    --y3: 79%;
-  }
-  100% {
-    --x: 50%;
-    --y: 20%;
-    --x2: 30%;
-    --y2: 70%;
-    --x3: 70%;
-    --y3: 30%;
-  }
-}
+/* Removed CSS animation - now using JavaScript physics */
 
 .pulse-background {
   position: absolute;
@@ -165,7 +92,7 @@ body {
   pointer-events: none;
 }
 
-.pulse-ring {
+.landing-page .pulse-ring {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -175,10 +102,10 @@ body {
   border: 2px solid #00d4ff;
   border-radius: 50%;
   opacity: 0;
-  animation: pulse 3s infinite;
+  animation: landing-pulse 3s infinite;
 }
 
-@keyframes pulse {
+@keyframes landing-pulse {
   0% {
     width: 300px;
     height: 300px;
