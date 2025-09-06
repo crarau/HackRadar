@@ -10,9 +10,14 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     
     const projectId = formData.get('projectId') as string;
+    const text = formData.get('text') as string;
+    const url = formData.get('url') as string;
+    const fileCount = parseInt(formData.get('fileCount') as string || '0');
+    const timestamp = formData.get('timestamp') as string;
+    
+    // Legacy support for old API calls
     const type = formData.get('type') as string;
     const description = formData.get('description') as string;
-    const file = formData.get('file') as File | null;
     const content = formData.get('content') as string;
     
     if (!projectId) {
@@ -33,27 +38,78 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    let entry: Omit<TimelineEntry, '_id'> = {
+    // Handle legacy single-field submissions
+    if (type || content || description) {
+      const legacyEntry: any = {
+        projectId,
+        type: type as 'text' | 'file' | 'image' | 'link',
+        content: content || '',
+        description,
+        createdAt: new Date()
+      };
+      
+      const result = await db.collection('timeline').insertOne(legacyEntry);
+      await db.collection('projects').updateOne(
+        { _id: new ObjectId(projectId) },
+        { $set: { updatedAt: new Date() } }
+      );
+      
+      return NextResponse.json({
+        success: true,
+        entryId: result.insertedId,
+        entry: { ...legacyEntry, _id: result.insertedId }
+      });
+    }
+    
+    // New multi-input submission
+    const files: any[] = [];
+    
+    // Process multiple files
+    for (let i = 0; i < fileCount; i++) {
+      const file = formData.get(`file_${i}`) as File | null;
+      if (file) {
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        
+        // For screenshots and small files, store base64
+        // In production, upload to S3/Cloudinary
+        files.push({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          data: buffer.toString('base64'),
+          isImage: file.type.startsWith('image/')
+        });
+      }
+    }
+    
+    // Build comprehensive entry
+    const entry: any = {
       projectId,
-      type: type as 'text' | 'file' | 'image' | 'link',
-      content: content || '',
-      description,
-      createdAt: new Date()
+      type: 'update',
+      text: text || '',
+      url: url || '',
+      files: files,
+      fileCount: files.length,
+      createdAt: new Date(timestamp || Date.now())
     };
     
-    // Handle file upload
-    if (file) {
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      
-      // For demo, we'll store base64 encoded content
-      // In production, you'd upload to S3 or similar
-      entry.content = buffer.toString('base64');
-      entry.fileName = file.name;
-      entry.fileType = file.type;
-      entry.fileSize = file.size;
-      entry.type = file.type.startsWith('image/') ? 'image' : 'file';
+    // Create a description summarizing the submission
+    const parts = [];
+    if (text) parts.push('text');
+    if (url) parts.push('website');
+    if (files.length > 0) {
+      const imageCount = files.filter(f => f.isImage).length;
+      const docCount = files.length - imageCount;
+      if (imageCount > 0) parts.push(`${imageCount} image${imageCount > 1 ? 's' : ''}`);
+      if (docCount > 0) parts.push(`${docCount} document${docCount > 1 ? 's' : ''}`);
     }
+    entry.description = parts.length > 0 
+      ? `Update with ${parts.join(', ')}`
+      : 'Empty update';
+    
+    // For display in timeline, create a summary content
+    entry.content = text || url || `${files.length} file(s) uploaded`;
     
     const result = await db.collection('timeline').insertOne(entry);
     

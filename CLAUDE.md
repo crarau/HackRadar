@@ -1,5 +1,29 @@
 # HackRadar - AI-Powered Real-Time Hackathon Evaluation System
 
+## CRITICAL DEVELOPMENT RULES FOR THIS PROJECT
+
+### 🚫 NEVER DO:
+1. **NEVER use inline CSS styles** - Always use Tailwind CSS classes
+2. **NEVER duplicate className attributes** - Combine all classes in one className
+3. **NEVER hardcode credentials** - Use environment variables
+4. **NEVER forget to associate data with user emails** - Projects must be linked to users
+5. **NEVER mix styling approaches** - Use Tailwind exclusively
+
+### ✅ ALWAYS DO:
+1. **ALWAYS use Tailwind CSS utility classes** for all styling
+2. **ALWAYS persist user and project data in localStorage**
+3. **ALWAYS check for existing projects by user email on login**
+4. **ALWAYS commit and push before major changes**
+5. **ALWAYS provide clear user feedback with toast notifications**
+
+### 📝 Quick Reference:
+- **MongoDB Credentials**: See `.env.local` file
+- **Frontend Port**: 7843
+- **Backend Port**: 7328 (if separate backend needed)
+- **Primary Colors**: cyan-400 (primary), green-400 (success), red-400 (error)
+
+# HackRadar - AI-Powered Real-Time Hackathon Evaluation System
+
 ## Project Overview
 An intelligent evaluation platform that automatically analyzes hackathon team submissions in real-time, providing continuous scoring, feedback, and progress tracking throughout the event.
 

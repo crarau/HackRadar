@@ -6,6 +6,8 @@ import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiZap, FiUploadCloud, FiTrendingUp, FiAward, FiLogOut, FiUpload, FiFile, FiX, FiRefreshCw, FiEdit2, FiCheck, FiX as FiCancel } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
+import Timeline from './components/Timeline';
+import UpdateForm from './components/UpdateForm';
 import './App.css';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '378200832535-trha0skd6g1mma6dv0rtl6o9fprjh38b.apps.googleusercontent.com';
@@ -50,20 +52,39 @@ export default function Home() {
     if (savedUser) {
       const userData = JSON.parse(savedUser);
       setUser(userData);
-    }
-
-    // Check for saved project
-    const savedProject = localStorage.getItem('hackradar_project');
-    if (savedProject) {
-      const projectData = JSON.parse(savedProject);
-      setProject(projectData);
-      setTeamName(projectData.teamName);
       
-      // Load timeline
-      fetch(`/api/timeline?projectId=${projectData._id}`)
+      // Check for existing projects by email
+      fetch('/api/projects')
         .then(res => res.json())
-        .then(data => setTimeline(data))
-        .catch(err => console.error('Error loading timeline:', err));
+        .then(projects => {
+          const userProject = projects.find((p: any) => p.email === userData.email);
+          if (userProject) {
+            setProject(userProject);
+            setTeamName(userProject.teamName);
+            localStorage.setItem('hackradar_project', JSON.stringify(userProject));
+            
+            // Load timeline
+            fetch(`/api/timeline?projectId=${userProject._id}`)
+              .then(res => res.json())
+              .then(data => setTimeline(data))
+              .catch(err => console.error('Error loading timeline:', err));
+          }
+        })
+        .catch(err => console.error('Error loading projects:', err));
+    } else {
+      // Check for saved project even if no user
+      const savedProject = localStorage.getItem('hackradar_project');
+      if (savedProject) {
+        const projectData = JSON.parse(savedProject);
+        setProject(projectData);
+        setTeamName(projectData.teamName);
+        
+        // Load timeline
+        fetch(`/api/timeline?projectId=${projectData._id}`)
+          .then(res => res.json())
+          .then(data => setTimeline(data))
+          .catch(err => console.error('Error loading timeline:', err));
+      }
     }
   }, []);
 
@@ -99,7 +120,26 @@ export default function Home() {
       };
       setUser(userData);
       localStorage.setItem('hackradar_user', JSON.stringify(userData));
-      toast.success(`Welcome, ${userData.name}!`);
+      
+      // Check for existing projects by email
+      const res = await fetch('/api/projects');
+      const projects = await res.json();
+      const userProject = projects.find((p: any) => p.email === userData.email);
+      
+      if (userProject) {
+        setProject(userProject);
+        setTeamName(userProject.teamName);
+        localStorage.setItem('hackradar_project', JSON.stringify(userProject));
+        
+        // Load timeline
+        const timelineRes = await fetch(`/api/timeline?projectId=${userProject._id}`);
+        const timelineData = await timelineRes.json();
+        setTimeline(timelineData);
+        
+        toast.success(`Welcome back, ${userData.name}! Found your team: ${userProject.teamName}`);
+      } else {
+        toast.success(`Welcome, ${userData.name}!`);
+      }
     } catch (error) {
       console.error('Login error:', error);
       toast.error('Login failed. Please try again.');
@@ -439,7 +479,7 @@ export default function Home() {
                 {!project ? (
                   // Step 1: Ask for team name only
                   <div className="submission-section">
-                    <h2>Create or Join Your Team</h2>
+                    <h2 className="text-2xl font-bold text-cyan-400 mb-6">Create or Join Your Team</h2>
                     
                     <div className="team-input">
                       <label>TEAM NAME</label>
@@ -479,7 +519,7 @@ export default function Home() {
                 ) : (
                   // Step 2: Show update form after team is created
                   <div className="submission-section">
-                    <h2 className="flex items-center gap-4">
+                    <h2 className="flex items-center gap-4 text-2xl font-bold text-white mb-2">
                       {isEditingTeamName ? (
                         <>
                           <input
@@ -508,7 +548,7 @@ export default function Home() {
                         </>
                       ) : (
                         <>
-                          Team: {project.teamName}
+                          <span className="text-white">Team: {project.teamName}</span>
                           <button
                             onClick={() => {
                               setIsEditingTeamName(true);
@@ -525,35 +565,34 @@ export default function Home() {
                       Project ID: {project._id}
                     </div>
                     
-                    <div className="team-input">
-                      <label>SUBMIT AN UPDATE</label>
-                      <textarea
-                        value={updateText}
-                        onChange={(e) => setUpdateText(e.target.value)}
-                        className="team-name-input"
-                        placeholder="Enter your update (e.g., 'Just finished implementing the login system')"
-                        className="min-h-[120px] resize-y font-inherit"
-                        autoFocus
-                      />
-                    </div>
+                    <UpdateForm 
+                      projectId={project._id}
+                      onSubmit={async (formData) => {
+                        const response = await fetch('/api/timeline', {
+                          method: 'POST',
+                          body: formData
+                        });
+                        
+                        if (response.ok) {
+                          // Reload timeline
+                          const timelineRes = await fetch(`/api/timeline?projectId=${project._id}`);
+                          const timelineData = await timelineRes.json();
+                          setTimeline(timelineData);
+                          
+                          // Get fresh assessment
+                          const assessRes = await fetch('/api/assess', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ projectId: project._id })
+                          });
 
-                    <button
-                      onClick={handleSubmitUpdate}
-                      disabled={isSubmittingUpdate || !updateText.trim()}
-                      className="submit-btn"
-                    >
-                      {isSubmittingUpdate ? (
-                        <>
-                          <FiRefreshCw className="spinning" />
-                          Submitting Update...
-                        </>
-                      ) : (
-                        <>
-                          <FiUpload />
-                          Submit Update
-                        </>
-                      )}
-                    </button>
+                          const assessData = await assessRes.json();
+                          setEvaluation(assessData.assessment);
+                        } else {
+                          throw new Error('Failed to submit');
+                        }
+                      }}
+                    />
                   </div>
                 )}
 
@@ -561,33 +600,8 @@ export default function Home() {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="submission-section"
-                    className="mt-8"
                   >
-                    <h2>Project Timeline</h2>
-                    <div className="mb-4 text-cyan-400">
-                      <strong>Team:</strong> {project.teamName}
-                    </div>
-                    <div className="flex flex-col gap-4">
-                      {timeline.map((entry: any, index: number) => (
-                        <div 
-                          key={entry._id} 
-                          className="p-4 bg-black/30 border border-cyan-400/30 rounded-lg flex items-center gap-4"
-                        >
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-green-400 flex items-center justify-center font-bold text-slate-900">
-                            {index + 1}
-                          </div>
-                          <div className="flex-1">
-                            <div className="text-cyan-400 text-sm mb-1">
-                              {new Date(entry.createdAt).toLocaleString()}
-                            </div>
-                            <div className="text-white">
-                              {entry.description || entry.content || `${entry.type} submission`}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <Timeline entries={timeline} teamName={project.teamName} />
                   </motion.div>
                 )}
 
@@ -597,7 +611,7 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     className="submission-section"
                   >
-                    <h2>AI Evaluation Results</h2>
+                    <h2 className="text-2xl font-bold text-cyan-400 mb-6">AI Evaluation Results</h2>
                     
                     <div className="text-center mb-8">
                       <div className="text-6xl font-bold text-cyan-400">
