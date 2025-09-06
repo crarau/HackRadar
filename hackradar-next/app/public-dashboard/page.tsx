@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { FiUsers, FiZap } from 'react-icons/fi';
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartOptions, ChartData } from 'chart.js';
@@ -40,7 +40,7 @@ const getRankColor = (position: number): { bg: string; border: string } => {
 };
 
 // Store for maintaining score history
-let scoreHistory: { [key: string]: number } = {};
+const scoreHistory: { [key: string]: number } = {};
 
 // Mock data generator with stable scores
 const generateMockData = (): TeamScore[] => {
@@ -107,7 +107,7 @@ const TeamChart = React.memo(({
   teams: TeamScore[], 
   animatingBars: Set<string> 
 }) => {
-  const chartRef = useRef<any>(null);
+  const chartRef = useRef<ChartJS<'bar'>>(null);
   
   const chartData: ChartData<'bar'> = useMemo(() => ({
     labels: teams.map(() => ''), // Empty labels - we draw them ourselves
@@ -161,7 +161,7 @@ const TeamChart = React.memo(({
             return teams[index]?.teamName || '';
           },
           label: (context) => {
-            if (!context || !context[0]) return '';
+            if (!context || !Array.isArray(context) || !context[0]) return '';
             const index = context[0].dataIndex;
             const team = teams[index];
             if (!team) return '';
@@ -208,7 +208,7 @@ const TeamChart = React.memo(({
   // Custom draw function for labels
   const plugins = useMemo(() => [{
     id: 'customLabels',
-    afterDatasetsDraw: (chart: any) => {
+    afterDatasetsDraw: (chart: ChartJS) => {
       const ctx = chart.ctx;
       const meta = chart.getDatasetMeta(0);
       
@@ -217,7 +217,8 @@ const TeamChart = React.memo(({
       teams.forEach((team, index) => {
         const bar = meta.data[index];
         if (bar) {
-          const { x, y } = bar.getProps(['x', 'y'], true);
+          const props = bar.getProps(['x', 'y'], true);
+          const { y } = props;
           
           ctx.save();
           

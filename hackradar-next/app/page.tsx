@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiZap, FiUploadCloud, FiTrendingUp, FiAward, FiLogOut, FiRefreshCw, FiEdit2, FiCheck, FiX as FiCancel, FiLink } from 'react-icons/fi';
+import { FiZap, FiUploadCloud, FiTrendingUp, FiLogOut, FiRefreshCw, FiEdit2, FiCheck, FiX as FiCancel, FiLink } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
 import Timeline from './components/Timeline';
 import UpdateForm from './components/UpdateForm';
@@ -310,7 +310,7 @@ export default function Home() {
         });
 
         // Update CSS variables
-        const landingPage = document.querySelector('.landing-page');
+        const landingPage = document.querySelector('.landing-page') as HTMLElement;
         if (landingPage) {
           landingPage.style.setProperty('--x1', `${balls[0].x}%`);
           landingPage.style.setProperty('--y1', `${balls[0].y}%`);
@@ -380,7 +380,7 @@ export default function Home() {
                   </h2>
                   
                   <p className="hero-description">
-                    Don't just get a score - get specific guidance on how to improve your project.
+                    Don&apos;t just get a score - get specific guidance on how to improve your project.
                     Upload your updates, screenshots, or pitch materials and receive detailed AI feedback
                     with actionable steps to strengthen your submission and increase your chances of winning.
                   </p>
@@ -408,7 +408,7 @@ export default function Home() {
                     <div className="feature-number">1</div>
                     <FiUploadCloud className="feature-icon" />
                     <h3>Upload Anything</h3>
-                    <p>Share screenshots, pitch decks, URLs, or just describe what you're building</p>
+                    <p>Share screenshots, pitch decks, URLs, or just describe what you&apos;re building</p>
                   </div>
 
                   <div className="feature-card">

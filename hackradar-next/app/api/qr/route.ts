@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     });
     
     // Return PNG image with caching headers
-    return new NextResponse(qrBuffer, {
+    return new NextResponse(qrBuffer as unknown as BodyInit, {
       status: 200,
       headers: {
         'Content-Type': 'image/png',
@@ -62,14 +62,14 @@ export async function POST(request: NextRequest) {
     const qrBuffer = await QRCode.toBuffer(url, {
       width: size,
       margin: margin,
-      errorCorrectionLevel: errorCorrection as any,
+      errorCorrectionLevel: errorCorrection as QRCode.QRCodeErrorCorrectionLevel,
       color: {
         dark: '#000000',
         light: '#FFFFFF'
       }
     });
     
-    return new NextResponse(qrBuffer, {
+    return new NextResponse(qrBuffer as unknown as BodyInit, {
       status: 200,
       headers: {
         'Content-Type': 'image/png',
