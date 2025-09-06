@@ -138,7 +138,6 @@ export default function UpdateForm({ projectId, websiteUrl, onSubmit }: UpdateFo
         />
       </div>
 
-
       {/* File Upload Section */}
       <div className="form-section">
         <label className="form-label">

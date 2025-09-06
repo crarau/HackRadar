@@ -469,50 +469,157 @@ export default function Home() {
                       )}
                     </h2>
                     
-                    <div className="mb-4 flex items-center gap-4">
-                      {isEditingWebsite ? (
-                        <>
-                          <input
-                            type="url"
-                            value={editedWebsiteUrl}
-                            onChange={(e) => setEditedWebsiteUrl(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleUpdateWebsiteUrl();
-                              if (e.key === 'Escape') setIsEditingWebsite(false);
-                            }}
-                            className="flex-1 bg-black bg-opacity-30 border border-cyan-400 rounded-lg p-2 text-white outline-none"
-                            placeholder="https://your-project-website.com"
-                            autoFocus
-                          />
-                          <button
-                            onClick={handleUpdateWebsiteUrl}
-                            className="bg-transparent border-none text-green-400 cursor-pointer text-xl hover:text-green-300"
-                          >
-                            <FiCheck />
-                          </button>
-                          <button
-                            onClick={() => setIsEditingWebsite(false)}
-                            className="bg-transparent border-none text-red-400 cursor-pointer text-xl hover:text-red-300"
-                          >
-                            <FiCancel />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-cyan-400 text-sm">
-                            Website: {websiteUrl || 'Not set'}
-                          </span>
-                          <button
-                            onClick={() => {
-                              setIsEditingWebsite(true);
-                              setEditedWebsiteUrl(websiteUrl || '');
-                            }}
-                            className="bg-transparent border-none text-cyan-400 cursor-pointer text-base opacity-70 transition-opacity hover:opacity-100"
-                          >
-                            <FiEdit2 />
-                          </button>
-                        </>
-                      )}
+                    <div className="mb-6">
+                      <style jsx>{`
+                        .website-url-section {
+                          display: flex;
+                          flex-direction: column;
+                          gap: 0.5rem;
+                        }
+                        
+                        .website-label {
+                          display: flex;
+                          align-items: center;
+                          gap: 0.5rem;
+                          color: #00d4ff;
+                          font-size: 0.9rem;
+                          text-transform: uppercase;
+                          letter-spacing: 1px;
+                        }
+                        
+                        .website-input-wrapper {
+                          position: relative;
+                        }
+                        
+                        .website-input {
+                          width: 100%;
+                          padding: 0.75rem;
+                          padding-right: 3rem;
+                          background: rgba(0, 0, 0, 0.3);
+                          border: 1px solid rgba(0, 212, 255, 0.3);
+                          border-radius: 8px;
+                          color: #ffffff;
+                          font-size: 1rem;
+                          transition: all 0.3s ease;
+                          font-family: inherit;
+                        }
+                        
+                        .website-input:focus {
+                          outline: none;
+                          border-color: #00d4ff;
+                          box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+                        }
+                        
+                        .website-input::placeholder {
+                          color: rgba(255, 255, 255, 0.3);
+                        }
+                        
+                        .edit-button {
+                          position: absolute;
+                          right: 0.75rem;
+                          top: 50%;
+                          transform: translateY(-50%);
+                          background: transparent;
+                          border: none;
+                          color: #00d4ff;
+                          cursor: pointer;
+                          opacity: 0.7;
+                          transition: opacity 0.3s ease;
+                          padding: 0.25rem;
+                        }
+                        
+                        .edit-button:hover {
+                          opacity: 1;
+                        }
+                        
+                        .action-buttons {
+                          position: absolute;
+                          right: 0.75rem;
+                          top: 50%;
+                          transform: translateY(-50%);
+                          display: flex;
+                          gap: 0.5rem;
+                        }
+                        
+                        .action-button {
+                          background: transparent;
+                          border: none;
+                          cursor: pointer;
+                          padding: 0.25rem;
+                          transition: all 0.3s ease;
+                        }
+                        
+                        .save-button {
+                          color: #00ff88;
+                        }
+                        
+                        .cancel-button {
+                          color: #ff6b6b;
+                        }
+                        
+                        .action-button:hover {
+                          transform: scale(1.1);
+                        }
+                      `}</style>
+                      
+                      <div className="website-url-section">
+                        <label className="website-label">
+                          <FiLink className="text-base" />
+                          WEBSITE URL
+                        </label>
+                        
+                        <div className="website-input-wrapper">
+                          {isEditingWebsite ? (
+                            <>
+                              <input
+                                type="url"
+                                value={editedWebsiteUrl}
+                                onChange={(e) => setEditedWebsiteUrl(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleUpdateWebsiteUrl();
+                                  if (e.key === 'Escape') setIsEditingWebsite(false);
+                                }}
+                                className="website-input"
+                                placeholder="https://your-project-website.com"
+                                autoFocus
+                              />
+                              <div className="action-buttons">
+                                <button
+                                  onClick={handleUpdateWebsiteUrl}
+                                  className="action-button save-button"
+                                >
+                                  <FiCheck size={18} />
+                                </button>
+                                <button
+                                  onClick={() => setIsEditingWebsite(false)}
+                                  className="action-button cancel-button"
+                                >
+                                  <FiCancel size={18} />
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <input
+                                type="url"
+                                value={websiteUrl || ''}
+                                className="website-input"
+                                placeholder="Enter your project website URL"
+                                readOnly
+                              />
+                              <button
+                                onClick={() => {
+                                  setIsEditingWebsite(true);
+                                  setEditedWebsiteUrl(websiteUrl || '');
+                                }}
+                                className="edit-button"
+                              >
+                                <FiEdit2 size={18} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     
                     <div className="mb-8 text-cyan-400 text-sm">
