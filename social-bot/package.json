@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node linkedin-poster.js",
     "post": "node linkedin-poster.js",
+    "create-session": "node create-session.js",
+    "test-post": "node test-post.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
