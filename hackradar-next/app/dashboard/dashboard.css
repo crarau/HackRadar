@@ -1,0 +1,351 @@
+.dashboard {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 100%);
+  color: #ffffff;
+}
+
+.dashboard-header {
+  background: rgba(26, 26, 46, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.header-left:hover {
+  opacity: 0.8;
+}
+
+.dashboard-logo {
+  width: 40px;
+  height: 40px;
+}
+
+.dashboard-header h1 {
+  font-size: 1.5rem;
+  background: linear-gradient(45deg, #00d4ff, #00ff88);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  border: 2px solid #00d4ff;
+}
+
+.logout-btn {
+  background: transparent;
+  border: 1px solid #00d4ff;
+  color: #00d4ff;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: #00d4ff;
+  color: #1a1a2e;
+}
+
+.dashboard-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.submission-section {
+  background: rgba(26, 26, 46, 0.6);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.submission-section h2 {
+  color: #00d4ff;
+  margin-bottom: 1.5rem;
+}
+
+.team-input {
+  margin-bottom: 1.5rem;
+}
+
+.team-input label {
+  display: block;
+  color: #00d4ff;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.team-name-input, .email-input {
+  width: 100%;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  margin-bottom: 1rem;
+}
+
+.team-name-input:focus, .email-input:focus {
+  outline: none;
+  border-color: #00d4ff;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.entry-type-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.type-btn {
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 20px;
+  color: #a0a0b0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.type-btn.active {
+  background: linear-gradient(45deg, #00d4ff, #00ff88);
+  border-color: transparent;
+  color: #1a1a2e;
+}
+
+.type-btn:hover:not(.active) {
+  border-color: #00d4ff;
+  color: #00d4ff;
+}
+
+.dropzone {
+  border: 2px dashed rgba(0, 212, 255, 0.5);
+  border-radius: 12px;
+  padding: 3rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(0, 0, 0, 0.2);
+  margin-bottom: 1rem;
+}
+
+.dropzone.active {
+  border-color: #00d4ff;
+  background: rgba(0, 212, 255, 0.1);
+}
+
+.dropzone:hover {
+  border-color: #00d4ff;
+}
+
+.upload-icon {
+  font-size: 3rem;
+  color: #00d4ff;
+  margin-bottom: 1rem;
+}
+
+.dropzone p {
+  color: #ffffff;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.file-types {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.timeline-section {
+  background: rgba(26, 26, 46, 0.6);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-top: 2rem;
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.timeline-title {
+  color: #00d4ff;
+  font-size: 1.5rem;
+}
+
+.timeline-count {
+  background: linear-gradient(45deg, #00d4ff, #00ff88);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  color: #1a1a2e;
+  font-weight: bold;
+}
+
+.timeline-entry {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+}
+
+.timeline-entry:hover {
+  border-color: #00d4ff;
+  background: rgba(0, 212, 255, 0.05);
+}
+
+.entry-icon {
+  color: #00d4ff;
+  font-size: 1.5rem;
+  margin-top: 0.25rem;
+}
+
+.entry-content {
+  flex: 1;
+}
+
+.entry-description {
+  color: #00d4ff;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.entry-text {
+  color: #ffffff;
+  line-height: 1.6;
+}
+
+.entry-filename {
+  color: #a0a0b0;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.entry-time {
+  color: #666;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.submit-btn, .assess-btn {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(45deg, #00d4ff, #00ff88);
+  border: none;
+  border-radius: 8px;
+  color: #1a1a2e;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.assess-btn {
+  background: linear-gradient(45deg, #00ff88, #00d4ff);
+}
+
+.submit-btn:hover:not(:disabled), .assess-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+}
+
+.submit-btn:disabled, .assess-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.assessment-result {
+  background: rgba(26, 26, 46, 0.6);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-top: 2rem;
+}
+
+.score-display {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.score-number {
+  font-size: 4rem;
+  font-weight: bold;
+  background: linear-gradient(45deg, #00ff88, #00d4ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.score-label {
+  color: #00d4ff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 0.5rem;
+}
+
+.feedback-text {
+  color: #ffffff;
+  line-height: 1.6;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
