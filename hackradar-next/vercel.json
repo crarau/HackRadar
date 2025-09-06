@@ -3,17 +3,5 @@
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "outputDirectory": ".next",
-  "env": {
-    "NEXT_PUBLIC_GOOGLE_CLIENT_ID": "@google_client_id",
-    "NEXT_PUBLIC_API_URL": "@api_url",
-    "MONGODB_URI": "@mongodb_uri",
-    "OPENAI_API_KEY": "@openai_api_key"
-  },
-  "build": {
-    "env": {
-      "NEXT_PUBLIC_GOOGLE_CLIENT_ID": "@google_client_id",
-      "NEXT_PUBLIC_API_URL": "@api_url"
-    }
-  }
+  "outputDirectory": ".next"
 }
