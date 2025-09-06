@@ -1,0 +1,28 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Simplified icon version without text -->
+  
+  <!-- Background -->
+  <rect width="100" height="100" rx="20" fill="#1a1a2e"/>
+  
+  <!-- Pulse Rings -->
+  <circle cx="50" cy="50" r="20" fill="none" stroke="#00d4ff" stroke-width="2" opacity="0.3"/>
+  <circle cx="50" cy="50" r="28" fill="none" stroke="#00d4ff" stroke-width="1.5" opacity="0.2"/>
+  <circle cx="50" cy="50" r="36" fill="none" stroke="#00d4ff" stroke-width="1" opacity="0.1"/>
+  
+  <!-- Central AI Core -->
+  <circle cx="50" cy="50" r="15" fill="#0f3460" stroke="#00d4ff" stroke-width="2"/>
+  
+  <!-- Neural Nodes -->
+  <circle cx="44" cy="44" r="2" fill="#00d4ff"/>
+  <circle cx="56" cy="44" r="2" fill="#00d4ff"/>
+  <circle cx="44" cy="56" r="2" fill="#00d4ff"/>
+  <circle cx="56" cy="56" r="2" fill="#00d4ff"/>
+  <circle cx="50" cy="50" r="3" fill="#ffffff"/>
+  
+  <!-- Score Indicators -->
+  <rect x="18" y="72" width="4" height="10" fill="#4caf50"/>
+  <rect x="25" y="68" width="4" height="14" fill="#2196f3"/>
+  <rect x="32" y="65" width="4" height="17" fill="#9c27b0"/>
+  <rect x="39" y="67" width="4" height="15" fill="#ff9800"/>
+  <rect x="46" y="70" width="4" height="12" fill="#f44336"/>
+</svg>
