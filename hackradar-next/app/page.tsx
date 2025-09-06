@@ -479,7 +479,7 @@ export default function Home() {
                 ) : (
                   // Step 2: Show update form after team is created
                   <div className="submission-section">
-                    <h2 style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <h2 className="flex items-center gap-4">
                       {isEditingTeamName ? (
                         <>
                           <input
@@ -490,39 +490,18 @@ export default function Home() {
                               if (e.key === 'Enter') handleUpdateTeamName();
                               if (e.key === 'Escape') setIsEditingTeamName(false);
                             }}
-                            style={{
-                              background: 'rgba(0, 0, 0, 0.3)',
-                              border: '1px solid #00d4ff',
-                              borderRadius: '8px',
-                              padding: '0.5rem',
-                              color: '#ffffff',
-                              fontSize: '1.5rem',
-                              fontWeight: 'bold',
-                              outline: 'none'
-                            }}
+                            className="bg-black/30 border border-cyan-400 rounded-lg p-2 text-white text-2xl font-bold outline-none"
                             autoFocus
                           />
                           <button
                             onClick={handleUpdateTeamName}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#00ff88',
-                              cursor: 'pointer',
-                              fontSize: '1.2rem'
-                            }}
+                            className="bg-transparent border-none text-green-400 cursor-pointer text-xl hover:text-green-300"
                           >
                             <FiCheck />
                           </button>
                           <button
                             onClick={() => setIsEditingTeamName(false)}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#ff6b6b',
-                              cursor: 'pointer',
-                              fontSize: '1.2rem'
-                            }}
+                            className="bg-transparent border-none text-red-400 cursor-pointer text-xl hover:text-red-300"
                           >
                             <FiCancel />
                           </button>
@@ -535,24 +514,14 @@ export default function Home() {
                               setIsEditingTeamName(true);
                               setEditedTeamName(project.teamName);
                             }}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#00d4ff',
-                              cursor: 'pointer',
-                              fontSize: '1rem',
-                              opacity: 0.7,
-                              transition: 'opacity 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                            onMouseLeave={(e) => e.currentTarget.style.opacity = '0.7'}
+                            className="bg-transparent border-none text-cyan-400 cursor-pointer text-base opacity-70 transition-opacity hover:opacity-100"
                           >
                             <FiEdit2 />
                           </button>
                         </>
                       )}
                     </h2>
-                    <div style={{ marginBottom: '2rem', color: '#00d4ff', fontSize: '0.9rem' }}>
+                    <div className="mb-8 text-cyan-400 text-sm">
                       Project ID: {project._id}
                     </div>
                     
@@ -563,11 +532,7 @@ export default function Home() {
                         onChange={(e) => setUpdateText(e.target.value)}
                         className="team-name-input"
                         placeholder="Enter your update (e.g., 'Just finished implementing the login system')"
-                        style={{ 
-                          minHeight: '120px', 
-                          resize: 'vertical',
-                          fontFamily: 'inherit'
-                        }}
+                        className="min-h-[120px] resize-y font-inherit"
                         autoFocus
                       />
                     </div>
@@ -597,44 +562,26 @@ export default function Home() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="submission-section"
-                    style={{ marginTop: '2rem' }}
+                    className="mt-8"
                   >
                     <h2>Project Timeline</h2>
-                    <div style={{ marginBottom: '1rem', color: '#00d4ff' }}>
+                    <div className="mb-4 text-cyan-400">
                       <strong>Team:</strong> {project.teamName}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="flex flex-col gap-4">
                       {timeline.map((entry: any, index: number) => (
                         <div 
                           key={entry._id} 
-                          style={{
-                            padding: '1rem',
-                            background: 'rgba(0, 0, 0, 0.3)',
-                            border: '1px solid rgba(0, 212, 255, 0.3)',
-                            borderRadius: '8px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '1rem'
-                          }}
+                          className="p-4 bg-black/30 border border-cyan-400/30 rounded-lg flex items-center gap-4"
                         >
-                          <div style={{ 
-                            width: '40px', 
-                            height: '40px', 
-                            borderRadius: '50%',
-                            background: 'linear-gradient(45deg, #00d4ff, #00ff88)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 'bold',
-                            color: '#1a1a2e'
-                          }}>
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-green-400 flex items-center justify-center font-bold text-slate-900">
                             {index + 1}
                           </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ color: '#00d4ff', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
+                          <div className="flex-1">
+                            <div className="text-cyan-400 text-sm mb-1">
                               {new Date(entry.createdAt).toLocaleString()}
                             </div>
-                            <div style={{ color: '#ffffff' }}>
+                            <div className="text-white">
                               {entry.description || entry.content || `${entry.type} submission`}
                             </div>
                           </div>
@@ -652,30 +599,30 @@ export default function Home() {
                   >
                     <h2>AI Evaluation Results</h2>
                     
-                    <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                      <div style={{ fontSize: '4rem', fontWeight: 'bold', color: '#00d4ff' }}>
+                    <div className="text-center mb-8">
+                      <div className="text-6xl font-bold text-cyan-400">
                         {evaluation.overallScore}
                       </div>
-                      <div style={{ color: '#666' }}>Overall Score</div>
+                      <div className="text-gray-500">Overall Score</div>
                     </div>
 
-                    <div style={{ marginBottom: '2rem' }}>
-                      <p style={{ color: '#ffffff', lineHeight: 1.6 }}>{evaluation.feedback}</p>
+                    <div className="mb-8">
+                      <p className="text-white leading-relaxed">{evaluation.feedback}</p>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <h3 style={{ color: '#00ff88', marginBottom: '1rem' }}>Strengths</h3>
+                        <h3 className="text-green-400 mb-4">Strengths</h3>
                         {evaluation.strengths.map((strength, i) => (
-                          <div key={i} style={{ color: '#a0a0b0', marginBottom: '0.5rem' }}>
+                          <div key={i} className="text-gray-400 mb-2">
                             ✓ {strength}
                           </div>
                         ))}
                       </div>
                       <div>
-                        <h3 style={{ color: '#ff9800', marginBottom: '1rem' }}>Improvements</h3>
+                        <h3 className="text-orange-400 mb-4">Improvements</h3>
                         {evaluation.improvements.map((improvement, i) => (
-                          <div key={i} style={{ color: '#a0a0b0', marginBottom: '0.5rem' }}>
+                          <div key={i} className="text-gray-400 mb-2">
                             • {improvement}
                           </div>
                         ))}
