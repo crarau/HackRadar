@@ -1,6 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { getDebugLogger } from '../DebugLogger';
 
+export interface MessageHistory {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface EvaluationScores {
   clarity: number;
   problem_value: number;
@@ -35,24 +40,28 @@ export class BaseAgent {
     }
   }
 
-  protected async callAnthropic(prompt: string): Promise<string> {
+  protected async callAnthropic(prompt: string, messageHistory: MessageHistory[] = []): Promise<string> {
     const logger = getDebugLogger();
     
     try {
-      // Log the prompt being sent
-      logger.logPrompt(this.name, prompt);
+      // Build messages array with history
+      const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
+        ...messageHistory,
+        { role: 'user', content: prompt }
+      ];
+      
+      // Log the conversation context
+      if (messageHistory.length > 0) {
+        logger.log(`📚 [${this.name}] Using conversation history with ${messageHistory.length} previous messages`);
+      }
+      logger.logPrompt(this.name, prompt, messageHistory);
       
       const startTime = Date.now();
       
       const response = await this.anthropic.messages.create({
         model: 'claude-3-haiku-20240307', // Fast and cheap for evaluations
         max_tokens: 1000,
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ]
+        messages
       });
 
       const duration = Date.now() - startTime;

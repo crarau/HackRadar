@@ -33,9 +33,16 @@ export class DebugLogger {
     this.log(separator);
   }
 
-  logPrompt(agent: string, prompt: string): void {
+  logPrompt(agent: string, prompt: string, messageHistory?: Array<{role: string; content: string}>): void {
     this.logSection(`[${agent}] SENDING TO ANTHROPIC`, '🤖');
-    this.log('PROMPT:');
+    
+    if (messageHistory && messageHistory.length > 0) {
+      this.log(`📚 USING CONVERSATION HISTORY (${messageHistory.length} messages)`);
+      this.log('Previous messages omitted for brevity');
+      this.log('');
+    }
+    
+    this.log('NEW PROMPT:');
     this.log(prompt);
     this.log('='.repeat(60));
   }

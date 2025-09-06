@@ -1,7 +1,8 @@
 import { Db, ObjectId } from 'mongodb';
 import { TextEvaluator, TextEvaluatorResult } from './agents/TextEvaluator';
 import { SRTracker, ReadinessChecklist, SRTrackerResult } from './agents/SRTracker';
-import { EvaluationScores } from './agents/BaseAgent';
+import { EvaluationScores, MessageHistory } from './agents/BaseAgent';
+import { getDebugLogger } from './DebugLogger';
 
 export interface Submission {
   text?: string;
@@ -90,18 +91,40 @@ export class EvaluationService {
       throw new Error('Project not found');
     }
 
-    // Get submission history
+    // Get ALL submission history to build conversation context
     const previousSubmissions = await this.db.collection('timeline')
       .find({ 
         projectId,
         'metadata.evaluation': { $exists: true }
       })
-      .sort({ createdAt: -1 })
-      .limit(1)
+      .sort({ createdAt: 1 }) // Oldest first to build conversation chronologically
       .toArray();
 
-    const lastSubmission = previousSubmissions[0];
+    const lastSubmission = previousSubmissions[previousSubmissions.length - 1];
     const submissionNumber = (lastSubmission?.metadata?.submission_number || 0) + 1;
+    
+    // Build message history from all previous submissions
+    const messageHistory = this.buildMessageHistory(previousSubmissions as Array<{
+      text?: string;
+      files?: Array<{ name: string; type: string; size: number }>;
+      url?: string;
+      metadata?: {
+        submission_number?: number;
+        evaluation?: {
+          final_score?: number;
+          feedback?: {
+            strengths?: string[];
+            weaknesses?: string[];
+          };
+        };
+      };
+    }>);
+    const logger = getDebugLogger();
+    
+    if (messageHistory.length > 0) {
+      logger.log(`📦 Building context from ${previousSubmissions.length} previous submissions`);
+      logger.log(`Total message history: ${messageHistory.length} messages`);
+    }
 
     // Create snapshot of current submission
     const snapshot = {
@@ -123,7 +146,9 @@ export class EvaluationService {
       this.textEvaluator.evaluate({
         text: text || '',
         mode: lastSubmission ? 'update' : 'initial',
-        previousSummary: lastSubmission?.text
+        previousSummary: lastSubmission?.text,
+        messageHistory,
+        isUpdate: previousSubmissions.length > 0
       }),
       this.srTracker.evaluate({
         userMessage,
@@ -339,5 +364,114 @@ export class EvaluationService {
     }
     
     return recommendations.slice(0, 3);
+  }
+  
+  private buildMessageHistory(submissions: Array<{
+    text?: string;
+    files?: Array<{ name: string; type: string; size: number }>;
+    url?: string;
+    metadata?: {
+      submission_number?: number;
+      evaluation?: {
+        final_score?: number;
+        feedback?: {
+          strengths?: string[];
+          weaknesses?: string[];
+        };
+      };
+    };
+  }>): MessageHistory[] {
+    const history: MessageHistory[] = [];
+    const logger = getDebugLogger();
+    
+    // System prompt to establish context
+    if (submissions.length > 0) {
+      history.push({
+        role: 'user',
+        content: `You are evaluating a hackathon project. This conversation tracks the project's progress over time. Each message represents a new submission/update. Your task is to evaluate the ENTIRE project based on ALL information provided throughout the conversation, not just individual updates.
+
+IMPORTANT: When scoring, consider the cumulative knowledge about the project. If early submissions establish strong foundations (demo, repository, etc.), those should continue to contribute to scores even if not mentioned in later updates.`
+      });
+      
+      history.push({
+        role: 'assistant',
+        content: 'I understand. I will evaluate the project holistically based on all information provided across all submissions, maintaining context of what has been established in previous updates.'
+      });
+    }
+    
+    // Add each previous submission to the conversation
+    for (const submission of submissions) {
+      // User submission
+      const userContent = this.formatSubmissionForHistory(submission);
+      history.push({
+        role: 'user',
+        content: userContent
+      });
+      
+      // Assistant evaluation response (simplified)
+      const evalResponse = this.formatEvaluationForHistory(submission.metadata?.evaluation);
+      history.push({
+        role: 'assistant',
+        content: evalResponse
+      });
+    }
+    
+    logger.log(`Built conversation with ${history.length} messages from ${submissions.length} submissions`);
+    
+    return history;
+  }
+  
+  private formatSubmissionForHistory(submission: {
+    text?: string;
+    files?: Array<{ name: string; type: string; size: number }>;
+    url?: string;
+    metadata?: {
+      submission_number?: number;
+    };
+  }): string {
+    const parts: string[] = [];
+    
+    parts.push(`[Submission #${submission.metadata?.submission_number || 1}]`);
+    
+    if (submission.text) {
+      parts.push(`Text: ${submission.text}`);
+    }
+    
+    if (submission.files && submission.files.length > 0) {
+      const fileList = submission.files.map(f => f.name).join(', ');
+      parts.push(`Files uploaded: ${fileList}`);
+    }
+    
+    if (submission.url) {
+      parts.push(`URL: ${submission.url}`);
+    }
+    
+    return parts.join('\n');
+  }
+  
+  private formatEvaluationForHistory(evaluation?: {
+    final_score?: number;
+    feedback?: {
+      strengths?: string[];
+      weaknesses?: string[];
+    };
+  }): string {
+    if (!evaluation) {
+      return 'Evaluation noted.';
+    }
+    
+    const parts: string[] = [];
+    
+    parts.push(`Score: ${evaluation.final_score}/100`);
+    
+    if (evaluation.feedback?.strengths && evaluation.feedback.strengths.length > 0) {
+      parts.push(`Strengths: ${evaluation.feedback.strengths.join('; ')}`);
+    }
+    
+    if (evaluation.feedback?.weaknesses && evaluation.feedback.weaknesses.length > 0) {
+      parts.push(`Areas for improvement: ${evaluation.feedback.weaknesses.join('; ')}`);
+    }
+    
+    return parts.join('\n');
   }
 }
