@@ -17,13 +17,18 @@ cp .env.example .env
 
 ## Usage
 
-### Manual Posting
+### First-Time Setup
 ```bash
-# Using environment variables
+# Run the bot - it will prompt for credentials on first use
 npm start
 
-# Using command line arguments
-node linkedin-poster.js your-email@example.com your-password
+# After first login, your session is saved and you won't need credentials again
+```
+
+### Subsequent Runs
+```bash
+# Just run - uses saved session
+npm start
 ```
 
 ### Scheduled Posts
@@ -31,19 +36,25 @@ Posts are configured in `posts.json` with scheduled times. The bot will automati
 
 ## Features
 
-- 🤖 Automated LinkedIn login
+- 🤖 Automated LinkedIn login with persistent session
+- 💾 One-time login - session saved locally
 - 📝 Scheduled post publishing
 - 🖼️ Image upload support
 - ⏰ Time-based scheduling
 - 🔒 2FA handling support
 - 📊 Post tracking
+- 🔐 No password storage - only session cookies
 
 ## Important Notes
 
-1. **2FA**: If your LinkedIn account has 2FA enabled, you'll need to complete verification manually when prompted
-2. **Rate Limiting**: Be careful not to post too frequently to avoid LinkedIn restrictions
-3. **Headless Mode**: Set to `false` in development to see what's happening
-4. **Security**: Never commit your `.env` file with real credentials
+1. **Session Storage**: Your LinkedIn session is saved in `linkedin-session/` folder - keep this secure!
+2. **2FA**: If your LinkedIn account has 2FA enabled, you'll need to complete verification manually when prompted (only on first login)
+3. **Rate Limiting**: Be careful not to post too frequently to avoid LinkedIn restrictions
+4. **Headless Mode**: Set to `false` in development to see what's happening
+5. **Security**: 
+   - Never commit the `linkedin-session/` folder
+   - No passwords are stored, only session cookies
+   - Delete `linkedin-session/` folder to logout
 
 ## Post Schedule
 

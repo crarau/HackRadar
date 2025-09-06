@@ -6,11 +6,14 @@ class LinkedInPoster {
   constructor() {
     this.browser = null;
     this.page = null;
+    this.userDataDir = path.join(__dirname, 'linkedin-session');
   }
 
   async init(headless = false) {
+    // Use persistent user data directory to maintain session
     this.browser = await puppeteer.launch({
       headless: headless,
+      userDataDir: this.userDataDir,  // This stores cookies, localStorage, etc.
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -28,8 +31,52 @@ class LinkedInPoster {
     await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
   }
 
-  async login(email, password) {
-    console.log('📱 Navigating to LinkedIn...');
+  async checkSession() {
+    console.log('🔍 Checking existing session...');
+    await this.page.goto('https://www.linkedin.com/feed/', { waitUntil: 'networkidle2' });
+    
+    const url = this.page.url();
+    const isLoggedIn = !url.includes('/login') && !url.includes('/checkpoint');
+    
+    if (isLoggedIn) {
+      console.log('✅ Using existing session - already logged in!');
+      return true;
+    }
+    
+    console.log('❌ No valid session found - login required');
+    return false;
+  }
+
+  async login(email = null, password = null) {
+    // First check if we're already logged in with saved session
+    const hasSession = await this.checkSession();
+    if (hasSession) {
+      return;
+    }
+
+    // If no saved session, we need credentials
+    if (!email || !password) {
+      console.log('📝 First-time login required.');
+      console.log('Please enter your LinkedIn credentials (they will be used once to create a persistent session)');
+      
+      // Interactive prompt for credentials
+      const readline = require('readline').createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
+      
+      email = await new Promise(resolve => {
+        readline.question('Email: ', resolve);
+      });
+      
+      password = await new Promise(resolve => {
+        readline.question('Password: ', resolve);
+      });
+      
+      readline.close();
+    }
+
+    console.log('📱 Logging in to LinkedIn...');
     await this.page.goto('https://www.linkedin.com/login', { waitUntil: 'networkidle2' });
     
     // Type email
@@ -53,6 +100,7 @@ class LinkedInPoster {
     }
     
     console.log('✅ Logged in successfully!');
+    console.log('💾 Session saved - you won\'t need to login again!');
   }
 
   async createPost(content, imagePath = null) {
@@ -182,19 +230,8 @@ async function main() {
     // Initialize browser (set to false to see the browser)
     await poster.init(false);
     
-    // Get credentials from environment or prompt
-    const email = process.env.LINKEDIN_EMAIL || process.argv[2];
-    const password = process.env.LINKEDIN_PASSWORD || process.argv[3];
-    
-    if (!email || !password) {
-      console.error('❌ Please provide LinkedIn credentials');
-      console.error('Usage: node linkedin-poster.js <email> <password>');
-      console.error('Or set LINKEDIN_EMAIL and LINKEDIN_PASSWORD environment variables');
-      process.exit(1);
-    }
-    
-    // Login
-    await poster.login(email, password);
+    // Login (will use saved session if available, otherwise prompt for credentials)
+    await poster.login();
     
     // Create scheduler
     const scheduler = new PostScheduler(poster);
