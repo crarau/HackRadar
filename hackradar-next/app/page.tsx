@@ -755,15 +755,27 @@ export default function Home() {
                           const timelineData = await timelineRes.json();
                           setTimeline(timelineData);
                           
-                          // Get fresh assessment
-                          const assessRes = await fetch('/api/assess', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ projectId: project._id })
-                          });
+                          // Get fresh assessment (optional - evaluation is already in timeline)
+                          try {
+                            const assessRes = await fetch('/api/assess', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ projectId: project._id })
+                            });
 
-                          const assessData = await assessRes.json();
-                          setEvaluation(assessData.assessment);
+                            if (assessRes.ok) {
+                              const assessData = await assessRes.json();
+                              if (assessData.assessment) {
+                                setEvaluation(assessData.assessment);
+                              }
+                            } else {
+                              // Log error but don't fail - evaluation is in timeline
+                              console.warn('Assessment endpoint returned error:', await assessRes.text());
+                            }
+                          } catch (assessError) {
+                            // Non-critical error - evaluation is already in timeline
+                            console.warn('Could not fetch assessment:', assessError);
+                          }
                           
                           // Return the response data (including debugLogs if present)
                           return responseData;

@@ -6,8 +6,13 @@ import { ObjectId } from 'mongodb';
 // POST assess a project
 export async function POST(request: NextRequest) {
   try {
+    console.log('[ASSESS] Starting assessment request');
+    
     const db = await getDatabase();
+    console.log('[ASSESS] Database connected');
+    
     const { projectId } = await request.json();
+    console.log('[ASSESS] Project ID:', projectId);
     
     if (!projectId) {
       return NextResponse.json(
@@ -17,9 +22,12 @@ export async function POST(request: NextRequest) {
     }
     
     // Get project and timeline entries
+    console.log('[ASSESS] Fetching project...');
     const project = await db.collection('projects').findOne({ 
       _id: new ObjectId(projectId) 
     });
+    console.log('[ASSESS] Project found:', !!project);
+    
     if (!project) {
       return NextResponse.json(
         { error: 'Project not found' },
@@ -27,10 +35,12 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    console.log('[ASSESS] Fetching timeline...');
     const timeline = await db.collection('timeline')
       .find({ projectId })
       .sort({ createdAt: 1 })
       .toArray();
+    console.log('[ASSESS] Timeline entries found:', timeline.length);
     
     // Generate mock assessment (in production, use AI)
     const assessment: Omit<Assessment, '_id'> = {
@@ -59,7 +69,9 @@ export async function POST(request: NextRequest) {
     };
     
     // Save assessment
+    console.log('[ASSESS] Saving assessment...');
     const result = await db.collection('assessments').insertOne(assessment);
+    console.log('[ASSESS] Assessment saved with ID:', result.insertedId);
     
     // Update project with latest assessment
     await db.collection('projects').updateOne(
@@ -80,9 +92,16 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('Error assessing project:', error);
-    return NextResponse.json(
-      { error: 'Failed to assess project' },
-      { status: 500 }
-    );
+    
+    // Return a more detailed error for debugging
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorDetails = {
+      error: 'Failed to assess project',
+      message: errorMessage,
+      type: error instanceof Error ? error.constructor.name : typeof error,
+      stack: error instanceof Error ? error.stack : undefined
+    };
+    
+    return NextResponse.json(errorDetails, { status: 500 });
   }
 }
