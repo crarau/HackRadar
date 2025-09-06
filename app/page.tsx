@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUpload, FiFile, FiX, FiLogOut, FiRefreshCw, FiTrendingUp, FiZap, FiUploadCloud, FiAward } from 'react-icons/fi';
+import { FiUpload, FiFile, FiX, FiLogOut, FiRefreshCw, FiTrendingUp, FiZap, FiUploadCloud, FiAward, FiCamera } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '378200832535-trha0skd6g1mma6dv0rtl6o9fprjh38b.apps.googleusercontent.com';
@@ -36,6 +36,7 @@ export default function Home() {
   const [description, setDescription] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles(prev => [...prev, ...acceptedFiles]);
@@ -57,6 +58,21 @@ export default function Home() {
   const removeFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
     toast.success('File removed');
+  };
+
+  const handleCameraCapture = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleCameraFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const capturedFiles = event.target.files;
+    if (capturedFiles && capturedFiles.length > 0) {
+      const filesArray = Array.from(capturedFiles);
+      setFiles(prev => [...prev, ...filesArray]);
+      toast.success(`Photo captured!`);
+    }
   };
 
   const handleLoginSuccess = async (credentialResponse: { credential?: string }) => {
@@ -269,16 +285,41 @@ export default function Home() {
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       Upload Files
                     </label>
-                    <div
-                      {...getRootProps()}
-                      className={`border-2 border-dashed ${isDragActive ? 'border-indigo-500 bg-indigo-500/10' : 'border-indigo-500/30'} rounded-lg p-8 text-center cursor-pointer transition`}
-                    >
-                      <input {...getInputProps()} />
-                      <FiUpload className="text-4xl text-indigo-400 mx-auto mb-3" />
-                      <p className="text-gray-300">Drag & drop files here, or click to select</p>
-                      <p className="text-sm text-gray-500 mt-2">
-                        Supports: PDF, Images, DOC, DOCX, TXT, MD (Max 10MB)
-                      </p>
+                    <div className="space-y-4">
+                      <div
+                        {...getRootProps()}
+                        className={`border-2 border-dashed ${isDragActive ? 'border-indigo-500 bg-indigo-500/10' : 'border-indigo-500/30'} rounded-lg p-8 text-center cursor-pointer transition`}
+                      >
+                        <input {...getInputProps()} />
+                        <FiUpload className="text-4xl text-indigo-400 mx-auto mb-3" />
+                        <p className="text-gray-300">Drag & drop files here, or click to select</p>
+                        <p className="text-sm text-gray-500 mt-2">
+                          Supports: PDF, Images, DOC, DOCX, TXT, MD (Max 10MB)
+                        </p>
+                      </div>
+                      
+                      <div className="text-center">
+                        <div className="text-gray-400 text-sm mb-2">— OR —</div>
+                        <button
+                          type="button"
+                          onClick={handleCameraCapture}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-700 transition"
+                        >
+                          <FiCamera className="text-xl" />
+                          Take Photo with Camera
+                        </button>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={handleCameraFile}
+                          className="hidden"
+                        />
+                        <p className="text-gray-500 text-xs mt-2">
+                          Use your device camera to capture documents or screens
+                        </p>
+                      </div>
                     </div>
                   </div>
 
