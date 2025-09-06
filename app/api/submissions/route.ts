@@ -3,9 +3,9 @@ import { connectDB } from '@/lib/mongodb';
 import { Submission } from '@/lib/models';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
+}) : null;
 
 export async function POST(request: NextRequest) {
   try {
@@ -90,39 +90,42 @@ export async function GET(request: NextRequest) {
 
 async function evaluateSubmission(id: string, teamName: string, description: string, files: Array<{ name: string; type: string; size: number; content: string }>) {
   try {
-    const filesList = files.map(f => f.name).join(', ');
-    
-    const prompt = `Evaluate this hackathon submission:
-    Team: ${teamName}
-    Description: ${description}
-    Files: ${filesList}
-    
-    Score on these criteria (0-10):
-    1. Technical Innovation
-    2. Business Viability
-    3. Presentation Quality
-    4. Innovation Factor
-    5. Progress & Momentum
-    
-    Return JSON with: overallScore (0-100), criteria array, feedback, strengths array, improvements array`;
+    if (openai) {
+      const filesList = files.map(f => f.name).join(', ');
+      
+      const prompt = `Evaluate this hackathon submission:
+      Team: ${teamName}
+      Description: ${description}
+      Files: ${filesList}
+      
+      Score on these criteria (0-10):
+      1. Technical Innovation
+      2. Business Viability
+      3. Presentation Quality
+      4. Innovation Factor
+      5. Progress & Momentum
+      
+      Return JSON with: overallScore (0-100), criteria array, feedback, strengths array, improvements array`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: "You are a hackathon judge. Provide constructive feedback." },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" }
-    });
+      const completion = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: "You are a hackathon judge. Provide constructive feedback." },
+          { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" }
+      });
 
-    const evaluation = JSON.parse(completion.choices[0].message.content || '{}');
-    evaluation.evaluatedAt = new Date();
-    
-    // Update submission with evaluation
-    await Submission.findByIdAndUpdate(id, {
-      status: 'completed',
-      evaluation: evaluation
-    });
+      const evaluation = JSON.parse(completion.choices[0].message.content || '{}');
+      evaluation.evaluatedAt = new Date();
+      
+      // Update submission with evaluation
+      await Submission.findByIdAndUpdate(id, {
+        status: 'completed',
+        evaluation: evaluation
+      });
+      return;
+    }
   } catch (error) {
     console.error('AI evaluation error:', error);
     
