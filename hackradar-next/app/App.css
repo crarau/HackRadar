@@ -44,6 +44,117 @@ body {
   overflow: hidden;
 }
 
+.landing-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(500px circle at var(--x, 50%) var(--y, 50%), 
+      rgba(0, 212, 255, 0.25) 0%, 
+      rgba(0, 212, 255, 0.12) 25%, 
+      rgba(0, 212, 255, 0.06) 50%, 
+      transparent 75%),
+    radial-gradient(700px circle at var(--x2, 30%) var(--y2, 70%), 
+      rgba(30, 40, 80, 0.3) 0%, 
+      rgba(20, 30, 60, 0.15) 40%, 
+      transparent 70%),
+    radial-gradient(350px circle at var(--x3, 70%) var(--y3, 30%), 
+      rgba(0, 150, 200, 0.18) 0%, 
+      rgba(0, 100, 150, 0.08) 40%, 
+      transparent 60%);
+  animation: circularMotion 25s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  pointer-events: none;
+}
+
+.landing-page::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+@keyframes circularMotion {
+  0% {
+    --x: 50%;
+    --y: 20%;
+    --x2: 30%;
+    --y2: 70%;
+    --x3: 70%;
+    --y3: 30%;
+  }
+  12.5% {
+    --x: 71%;
+    --y: 29%;
+    --x2: 21%;
+    --y2: 79%;
+    --x3: 79%;
+    --y3: 21%;
+  }
+  25% {
+    --x: 80%;
+    --y: 50%;
+    --x2: 20%;
+    --y2: 80%;
+    --x3: 80%;
+    --y3: 20%;
+  }
+  37.5% {
+    --x: 71%;
+    --y: 71%;
+    --x2: 29%;
+    --y2: 71%;
+    --x3: 71%;
+    --y3: 29%;
+  }
+  50% {
+    --x: 50%;
+    --y: 80%;
+    --x2: 30%;
+    --y2: 50%;
+    --x3: 70%;
+    --y3: 50%;
+  }
+  62.5% {
+    --x: 29%;
+    --y: 71%;
+    --x2: 71%;
+    --y2: 29%;
+    --x3: 29%;
+    --y3: 71%;
+  }
+  75% {
+    --x: 20%;
+    --y: 50%;
+    --x2: 80%;
+    --y2: 20%;
+    --x3: 20%;
+    --y3: 80%;
+  }
+  87.5% {
+    --x: 29%;
+    --y: 29%;
+    --x2: 79%;
+    --y2: 21%;
+    --x3: 21%;
+    --y3: 79%;
+  }
+  100% {
+    --x: 50%;
+    --y: 20%;
+    --x2: 30%;
+    --y2: 70%;
+    --x3: 70%;
+    --y3: 30%;
+  }
+}
+
 .pulse-background {
   position: absolute;
   top: 50%;
@@ -152,7 +263,7 @@ body {
 
 .hero-description {
   font-size: 1.2rem;
-  color: #a0a0b0;
+  color: #d0d0e0;
   max-width: 600px;
   margin: 0 auto 2rem;
   line-height: 1.6;
@@ -187,6 +298,24 @@ body {
   text-align: center;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
+  position: relative;
+}
+
+.feature-number {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 35px;
+  height: 35px;
+  background: linear-gradient(45deg, #00ff88, #00d4ff);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #0a0a1a;
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
 }
 
 .feature-card:hover {

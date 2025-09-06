@@ -319,7 +319,7 @@ export default function Home() {
                   <FiZap className="logo" />
                   <h1>HackRadar</h1>
                 </div>
-                <div className="header-tagline">Real-Time AI Evaluation for Hackathons</div>
+                <div className="header-tagline">Get AI Feedback to Improve & Win Hackathons</div>
               </motion.header>
 
               <main className="landing-main">
@@ -330,15 +330,15 @@ export default function Home() {
                   className="hero-section"
                 >
                   <h2 className="hero-title">
-                    <span className="gradient-text">Track Your Progress</span>
+                    <span className="gradient-text">Get Actionable Feedback</span>
                     <br />
-                    <span className="highlight">Win the Hackathon</span>
+                    <span className="highlight">Improve & Win</span>
                   </h2>
                   
                   <p className="hero-description">
-                    Get instant AI-powered feedback on your hackathon project.
-                    Upload your pitch deck, code, or documentation and receive
-                    real-time evaluation across multiple criteria.
+                    Don't just get a score - get specific guidance on how to improve your project.
+                    Upload your updates, screenshots, or pitch materials and receive detailed AI feedback
+                    with actionable steps to strengthen your submission and increase your chances of winning.
                   </p>
 
                   <div className="cta-container">
@@ -350,7 +350,7 @@ export default function Home() {
                       text="continue_with"
                       shape="pill"
                     />
-                    <div className="login-note">Sign in with Google to get started</div>
+                    <div className="login-note">Sign in with Google → Upload your project → Get instant improvement tips</div>
                   </div>
                 </motion.div>
 
@@ -361,34 +361,31 @@ export default function Home() {
                   className="features-grid"
                 >
                   <div className="feature-card">
-                    <FiZap className="feature-icon" />
-                    <h3>Instant Analysis</h3>
-                    <p>Get feedback in under 30 seconds using advanced AI agents</p>
-                  </div>
-
-                  <div className="feature-card">
+                    <div className="feature-number">1</div>
                     <FiUploadCloud className="feature-icon" />
-                    <h3>Any Format</h3>
-                    <p>Upload PDFs, images, websites, or any digital content</p>
+                    <h3>Upload Anything</h3>
+                    <p>Share screenshots, pitch decks, URLs, or just describe what you're building</p>
                   </div>
 
                   <div className="feature-card">
+                    <div className="feature-number">2</div>
+                    <FiZap className="feature-icon" />
+                    <h3>Get Smart Analysis</h3>
+                    <p>AI analyzes your project and identifies specific areas for improvement</p>
+                  </div>
+
+                  <div className="feature-card">
+                    <div className="feature-number">3</div>
                     <FiTrendingUp className="feature-icon" />
-                    <h3>Track Progress</h3>
-                    <p>Monitor your score evolution throughout the hackathon</p>
-                  </div>
-
-                  <div className="feature-card">
-                    <FiAward className="feature-icon" />
-                    <h3>Compete Live</h3>
-                    <p>See real-time leaderboard and compete with other teams</p>
+                    <h3>Improve & Win</h3>
+                    <p>Follow the actionable feedback, resubmit, and watch your score climb</p>
                   </div>
                 </motion.div>
 
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 0.6 }}
+                  transition={{ duration: 0.5, delay: 0.8 }}
                   className="access-button-container"
                 >
                   <a 
