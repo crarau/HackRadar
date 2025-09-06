@@ -59,7 +59,7 @@ export default function Home() {
     toast.success('File removed');
   };
 
-  const handleLoginSuccess = async (credentialResponse: any) => {
+  const handleLoginSuccess = async (credentialResponse: { credential: string }) => {
     try {
       const decoded = JSON.parse(atob(credentialResponse.credential.split('.')[1]));
       const userData: User = {
@@ -164,6 +164,7 @@ export default function Home() {
               {user && (
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
                     <span className="text-gray-300">{user.name}</span>
                   </div>

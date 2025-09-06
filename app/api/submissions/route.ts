@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function evaluateSubmission(id: string, teamName: string, description: string, files: any[]) {
+async function evaluateSubmission(id: string, teamName: string, description: string, files: Array<{ name: string; type: string; size: number; content: string }>) {
   try {
     const filesList = files.map(f => f.name).join(', ');
     
