@@ -60,8 +60,9 @@ export default function Home() {
   const [isEditingTeamName, setIsEditingTeamName] = useState(false);
   const [editedTeamName, setEditedTeamName] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
-  const [isEditingWebsite, setIsEditingWebsite] = useState(false);
   const [editedWebsiteUrl, setEditedWebsiteUrl] = useState('');
+  const [isSavingWebsite, setIsSavingWebsite] = useState(false);
+  const [websiteChanged, setWebsiteChanged] = useState(false);
 
   // Load user and project from localStorage on mount
   React.useEffect(() => {
@@ -80,6 +81,7 @@ export default function Home() {
             setProject(userProject);
             setTeamName(userProject.teamName);
             setWebsiteUrl(userProject.websiteUrl || '');
+            setEditedWebsiteUrl(userProject.websiteUrl || '');
             localStorage.setItem('hackradar_project', JSON.stringify(userProject));
             
             // Load timeline
@@ -135,6 +137,7 @@ export default function Home() {
         setProject(userProject);
         setTeamName(userProject.teamName);
         setWebsiteUrl(userProject.websiteUrl || '');
+        setEditedWebsiteUrl(userProject.websiteUrl || '');
         localStorage.setItem('hackradar_project', JSON.stringify(userProject));
         
         // Load timeline
@@ -229,17 +232,20 @@ export default function Home() {
     }
   };
 
-  const handleUpdateWebsiteUrl = async () => {
-    if (!project || editedWebsiteUrl === websiteUrl) {
-      setIsEditingWebsite(false);
+  const handleUpdateWebsiteUrl = async (newUrl?: string) => {
+    const urlToUpdate = newUrl !== undefined ? newUrl : editedWebsiteUrl;
+    
+    if (!project || urlToUpdate === websiteUrl) {
+      setWebsiteChanged(false);
       return;
     }
-
+    
+    setIsSavingWebsite(true);
     try {
       // Update project with website URL
-      const updatedProject = { ...project, websiteUrl: editedWebsiteUrl };
+      const updatedProject = { ...project, websiteUrl: urlToUpdate };
       setProject(updatedProject);
-      setWebsiteUrl(editedWebsiteUrl);
+      setWebsiteUrl(urlToUpdate);
       localStorage.setItem('hackradar_project', JSON.stringify(updatedProject));
       
       // Update in database
@@ -248,17 +254,34 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           projectId: project._id,
-          websiteUrl: editedWebsiteUrl 
+          websiteUrl: urlToUpdate 
         })
       });
       
-      toast.success('Website URL updated!');
-      setIsEditingWebsite(false);
+      setWebsiteChanged(false);
+      toast.success('Saved!', {
+        duration: 2000,
+        icon: '✅',
+      });
     } catch (error) {
       console.error('Error updating website URL:', error);
-      toast.error('Failed to update website URL');
+      toast.error('Failed to save website URL');
+    } finally {
+      setIsSavingWebsite(false);
     }
   };
+
+  // Auto-save with debounce
+  React.useEffect(() => {
+    if (websiteChanged && editedWebsiteUrl !== websiteUrl) {
+      const timer = setTimeout(() => {
+        handleUpdateWebsiteUrl(editedWebsiteUrl);
+      }, 1500); // Auto-save after 1.5 seconds of no typing
+      
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editedWebsiteUrl, websiteChanged]);
 
 
 
@@ -560,6 +583,24 @@ export default function Home() {
                         .action-button:hover {
                           transform: scale(1.1);
                         }
+                        
+                        @keyframes spin {
+                          from { transform: rotate(0deg); }
+                          to { transform: rotate(360deg); }
+                        }
+                        
+                        .spinning {
+                          animation: spin 1s linear infinite;
+                        }
+                        
+                        .has-changes {
+                          animation: pulse 2s ease-in-out infinite;
+                        }
+                        
+                        @keyframes pulse {
+                          0%, 100% { opacity: 1; }
+                          50% { opacity: 0.8; }
+                        }
                       `}</style>
                       
                       <div className="website-url-section">
@@ -569,56 +610,61 @@ export default function Home() {
                         </label>
                         
                         <div className="website-input-wrapper">
-                          {isEditingWebsite ? (
-                            <>
-                              <input
-                                type="url"
-                                value={editedWebsiteUrl}
-                                onChange={(e) => setEditedWebsiteUrl(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleUpdateWebsiteUrl();
-                                  if (e.key === 'Escape') setIsEditingWebsite(false);
-                                }}
-                                className="website-input"
-                                placeholder="https://your-project-website.com"
-                                autoFocus
-                              />
-                              <div className="action-buttons">
-                                <button
-                                  onClick={handleUpdateWebsiteUrl}
-                                  className="action-button save-button"
-                                >
-                                  <FiCheck size={18} />
-                                </button>
-                                <button
-                                  onClick={() => setIsEditingWebsite(false)}
-                                  className="action-button cancel-button"
-                                >
-                                  <FiCancel size={18} />
-                                </button>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <input
-                                type="url"
-                                value={websiteUrl || ''}
-                                className="website-input"
-                                placeholder="Enter your project website URL"
-                                readOnly
-                              />
-                              <button
-                                onClick={() => {
-                                  setIsEditingWebsite(true);
-                                  setEditedWebsiteUrl(websiteUrl || '');
-                                }}
-                                className="edit-button"
-                              >
-                                <FiEdit2 size={18} />
-                              </button>
-                            </>
-                          )}
+                          <input
+                            type="url"
+                            value={editedWebsiteUrl}
+                            onChange={(e) => {
+                              setEditedWebsiteUrl(e.target.value);
+                              setWebsiteChanged(true);
+                            }}
+                            onFocus={() => {
+                              if (!editedWebsiteUrl && websiteUrl) {
+                                setEditedWebsiteUrl(websiteUrl);
+                              }
+                            }}
+                            className={`website-input ${websiteChanged && editedWebsiteUrl !== websiteUrl ? 'has-changes' : ''}`}
+                            placeholder="https://your-project-website.com"
+                            style={{
+                              borderColor: websiteChanged && editedWebsiteUrl !== websiteUrl ? '#ffa500' : 
+                                          isSavingWebsite ? '#00ff88' : undefined,
+                              backgroundColor: websiteChanged && editedWebsiteUrl !== websiteUrl ? 'rgba(255, 165, 0, 0.05)' :
+                                              isSavingWebsite ? 'rgba(0, 255, 136, 0.05)' : undefined
+                            }}
+                          />
+                          <div className="edit-button" style={{
+                            color: websiteChanged && editedWebsiteUrl !== websiteUrl ? '#ffa500' :
+                                   isSavingWebsite ? '#00ff88' : '#00d4ff',
+                            opacity: 1
+                          }}>
+                            {isSavingWebsite ? (
+                              <FiRefreshCw size={16} className="spinning" style={{animation: 'spin 1s linear infinite'}} />
+                            ) : websiteChanged && editedWebsiteUrl !== websiteUrl ? (
+                              <FiEdit2 size={16} />
+                            ) : (
+                              <FiCheck size={16} />
+                            )}
+                          </div>
                         </div>
+                        {websiteChanged && editedWebsiteUrl !== websiteUrl && (
+                          <div style={{
+                            marginTop: '8px',
+                            fontSize: '11px',
+                            color: '#ffa500',
+                            fontStyle: 'italic'
+                          }}>
+                            Auto-saving in a moment...
+                          </div>
+                        )}
+                        {!websiteChanged && (
+                          <div style={{
+                            marginTop: '8px',
+                            fontSize: '11px',
+                            color: 'rgba(255, 255, 255, 0.4)',
+                            fontStyle: 'italic'
+                          }}>
+                            Click to edit • Changes save automatically
+                          </div>
+                        )}
                       </div>
                     </div>
                     

@@ -62,3 +62,7 @@ temp/
 *.pem
 .vercel
 *.tsbuildinfo
+
+# Archived and deprecated directories
+___DEPRECATED___*/
+hackradar-next-archived-*/
