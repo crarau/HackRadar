@@ -1,0 +1,44 @@
+[
+  {
+    "title": "Launch Announcement",
+    "content": "🚀 Excited to announce HackRadar - our project for AGI Ventures Canada Hackathon 3.0!\n\nWe're building an AI-powered real-time evaluation system that gives hackathon teams instant feedback as they build. No more waiting until the end to know if you're on track!\n\n🎯 Key Features:\n• Real-time AI evaluation of your progress\n• Multi-format support (PDFs, websites, code, pitch decks)\n• Instant actionable feedback to improve your project\n• Live leaderboard to track competition\n• Progress graphs showing your momentum\n\nOur mission: Help every team build better by providing continuous AI-powered guidance throughout the hackathon, not just at the end.\n\nBuilding this at Invest Ottawa with an amazing team!\n\nFollow our journey as we build this in 24 hours!\n\nAGI Ventures Canada #AGIV #AGIVenturesCanada #BuildToConvert #AI #Hackathon #Innovation #Ottawa #TechStartup #AIAgents #RealtimeAnalytics",
+    "image": null,
+    "scheduled": "2025-09-06T09:30:00",
+    "posted": false
+  },
+  {
+    "title": "Progress Update",
+    "content": "⚡ HackRadar Update: 6 hours in!\n\n✅ Document ingestion pipeline: DONE\n✅ Multi-agent AI evaluation system: IN PROGRESS\n✅ Real-time scoring engine: STARTING\n\nThe coffee is flowing, the code is compiling, and we're on track to revolutionize how hackathons evaluate projects!\n\nOur AI agents are already analyzing test submissions in <30 seconds. Next up: building the live dashboard!\n\nAGI Ventures Canada #AGIV #AGIVenturesCanada #BuildToConvert #StartupLife #CodingLife #AIInnovation",
+    "image": null,
+    "scheduled": "2025-09-06T15:00:00",
+    "posted": false
+  },
+  {
+    "title": "Call for Beta Testers",
+    "content": "🔍 Calling all Hackathon 3.0 teams!\n\nWant to be the first to try HackRadar? We're looking for teams to beta test our real-time AI evaluation system!\n\n📱 Scan our QR code at our table\n📄 Upload your pitch deck or project docs\n⚡ Get instant AI-powered feedback\n📈 Track your score in real-time\n\nFind us at Invest Ottawa - we're the team with the pulsing radar logo!\n\nFirst 10 teams to test get priority access when we launch!\n\nAGI Ventures Canada #AGIV #AGIVenturesCanada #BuildToConvert #BetaTesters #StartupLaunch",
+    "image": null,
+    "scheduled": "2025-09-06T18:00:00",
+    "posted": false
+  },
+  {
+    "title": "Technical Deep Dive",
+    "content": "🧠 The tech behind HackRadar:\n\nWe're using a multi-agent AI architecture where specialized agents evaluate different aspects:\n• Technical Innovation Agent\n• Business Viability Agent\n• Presentation Quality Agent\n• Progress Tracking Agent\n\nEach agent provides targeted feedback, then we aggregate scores in real-time using WebSockets for instant updates.\n\nStack: Node.js, React, OpenAI API, WebSockets, PostgreSQL\n\nThe challenge: Processing any file format in <30 seconds while maintaining quality evaluation.\n\nAGI Ventures Canada #AGIV #AGIVenturesCanada #BuildToConvert #TechStack #AIArchitecture #OpenSource",
+    "image": null,
+    "scheduled": "2025-09-06T20:00:00",
+    "posted": false
+  },
+  {
+    "title": "Final Sprint",
+    "content": "🏁 Final sprint for HackRadar!\n\n12 hours to go and we're adding the finishing touches:\n• Live leaderboard with animations\n• Feedback export for teams\n• Historical progress tracking\n• QR code instant access\n\nThe most exciting part? Watching teams use our tool to improve their projects in real-time!\n\nDemo tomorrow at 10:15 AM - come see how AI can transform hackathon evaluation!\n\nAGI Ventures Canada #AGIV #AGIVenturesCanada #BuildToConvert #DemoDay #AIProducts",
+    "image": null,
+    "scheduled": "2025-09-06T21:00:00",
+    "posted": false
+  },
+  {
+    "title": "Demo Day",
+    "content": "🎯 IT'S DEMO TIME!\n\nHackRadar is live at AGI Ventures Canada Hackathon 3.0!\n\nWatch us demonstrate how AI can provide real-time evaluation and feedback for hackathon teams. No more waiting until the end to know if you're on track!\n\n🔗 Try it yourself: [Link to app]\n📊 Live leaderboard: [Link to dashboard]\n\nThank you to all the teams who tested and provided feedback! Your input made HackRadar better!\n\nAGI Ventures Canada #AGIV #AGIVenturesCanada #BuildToConvert #DemoDay #LaunchDay #StartupPitch",
+    "image": null,
+    "scheduled": "2025-09-07T10:00:00",
+    "posted": false
+  }
+]
