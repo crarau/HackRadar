@@ -1,4 +1,4 @@
-# HackathonPulse - AI-Powered Real-Time Hackathon Evaluation System
+# HackRadar - AI-Powered Real-Time Hackathon Evaluation System
 
 ## Project Overview
 An intelligent evaluation platform that automatically analyzes hackathon team submissions in real-time, providing continuous scoring, feedback, and progress tracking throughout the event.

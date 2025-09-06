@@ -1,6 +1,6 @@
-# HackathonPulse
+# HackRadar
 
-Real-time AI-powered hackathon evaluation and feedback system.
+Real-time AI-powered hackathon evaluation and feedback system - Track all teams on your competitive radar.
 
 ## Quick Start
 

@@ -61,10 +61,10 @@
   </g>
   
   <!-- Text -->
-  <text x="100" y="170" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">
-    PulseCheck
+  <text x="100" y="170" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">
+    HackRadar
   </text>
   <text x="100" y="185" font-family="Arial, sans-serif" font-size="10" fill="#00d4ff" text-anchor="middle">
-    AI Evaluation System
+    Real-Time AI Evaluation
   </text>
 </svg>
