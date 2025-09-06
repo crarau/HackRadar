@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiZap, FiUploadCloud, FiTrendingUp, FiAward, FiLogOut, FiRefreshCw, FiEdit2, FiCheck, FiX as FiCancel } from 'react-icons/fi';
+import { FiZap, FiUploadCloud, FiTrendingUp, FiAward, FiLogOut, FiRefreshCw, FiEdit2, FiCheck, FiX as FiCancel, FiLink } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
 import Timeline from './components/Timeline';
 import UpdateForm from './components/UpdateForm';
