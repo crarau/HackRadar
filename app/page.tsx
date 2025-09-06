@@ -172,7 +172,16 @@ export default function Home() {
         <header className="border-b border-indigo-500/20 backdrop-blur-sm bg-slate-900/50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
+              <div 
+                className="flex items-center gap-3 cursor-pointer"
+                onClick={() => {
+                  setUser(null);
+                  setEvaluation(null);
+                  setFiles([]);
+                  setTeamName('');
+                  setDescription('');
+                }}
+              >
                 <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
                   <FiZap className="text-white text-xl" />
                 </div>
