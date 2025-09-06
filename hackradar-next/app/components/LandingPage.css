@@ -228,4 +228,35 @@
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
+
+  .access-button {
+    font-size: 0.9rem;
+    padding: 0.8rem 2rem;
+  }
+}
+
+.access-button-container {
+  text-align: center;
+  margin: 3rem 0 2rem;
+}
+
+.access-button {
+  display: inline-block;
+  background: linear-gradient(45deg, #00d4ff, #00ff88);
+  color: #0a0a1a;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 1.1rem;
+  padding: 1rem 3rem;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 5px 20px rgba(0, 212, 255, 0.3);
+}
+
+.access-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 212, 255, 0.5);
+  background: linear-gradient(45deg, #00ff88, #00d4ff);
 }
