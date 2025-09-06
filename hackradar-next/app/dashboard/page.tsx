@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiPlus, FiFile, FiImage, FiType, FiSend, FiClock, FiAward, FiUpload } from 'react-icons/fi';
+import { FiFile, FiImage, FiType, FiClock, FiAward, FiUpload } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
 
 interface Project {
@@ -11,7 +11,10 @@ interface Project {
   email: string;
   createdAt: string;
   status: string;
-  lastAssessment?: any;
+  lastAssessment?: {
+    score: number;
+    feedback: string;
+  };
 }
 
 interface TimelineEntry {
@@ -60,13 +63,13 @@ export default function Dashboard() {
       setProject(data.project);
       setShowTimeline(true);
       toast.success('Project created! Now add your timeline entries.');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create project');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create project');
     }
   };
 
   // Add timeline entry
-  const handleAddEntry = async () => {
+  const handleAddEntry = async (): Promise<void> => {
     if (!project) return;
 
     if (entryType === 'text' && !entryContent) {
@@ -108,15 +111,15 @@ export default function Dashboard() {
       setEntryDescription('');
       setSelectedFile(null);
       toast.success('Entry added to timeline!');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to add entry');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add entry');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   // Assess project
-  const handleAssess = async () => {
+  const handleAssess = async (): Promise<void> => {
     if (!project) return;
 
     setIsAssessing(true);
@@ -135,8 +138,8 @@ export default function Dashboard() {
 
       setProject({ ...project, lastAssessment: data.assessment });
       toast.success('Assessment complete!');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to assess project');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to assess project');
     } finally {
       setIsAssessing(false);
     }

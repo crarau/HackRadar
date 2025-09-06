@@ -56,7 +56,7 @@ export default function Timeline({ entries, teamName }: TimelineProps) {
                 </div>
               )}
               
-              {/* Display images inline */}
+              {/* Display images and files inline */}
               {entry.files && entry.files.length > 0 && (
                 <div className="timeline-files">
                   {entry.files.map((file, fileIndex) => (
@@ -69,9 +69,44 @@ export default function Timeline({ entries, teamName }: TimelineProps) {
                           />
                           <div className="image-caption">{file.name}</div>
                         </div>
+                      ) : file.type === 'application/pdf' ? (
+                        <div className="timeline-pdf">
+                          <div className="pdf-preview">
+                            <div className="pdf-icon">📄</div>
+                            <div className="pdf-info">
+                              <div className="pdf-name">{file.name}</div>
+                              <div className="pdf-size">({(file.size / 1024 / 1024).toFixed(2)} MB)</div>
+                              <a 
+                                href={`/api/files/${entry._id}?fileIndex=${fileIndex}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="pdf-link"
+                              >
+                                📥 View/Download PDF
+                              </a>
+                            </div>
+                          </div>
+                          {/* Embed PDF preview if it's small enough */}
+                          {file.size < 5000000 && (
+                            <iframe
+                              src={`data:${file.type};base64,${file.data}`}
+                              className="pdf-iframe"
+                              title={file.name}
+                            />
+                          )}
+                        </div>
                       ) : (
                         <div className="timeline-file">
-                          📎 {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                          <span className="file-icon">📎</span>
+                          <span className="file-name">{file.name}</span>
+                          <span className="file-size">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                          <a 
+                            href={`/api/files/${entry._id}?fileIndex=${fileIndex}`}
+                            download={file.name}
+                            className="file-download"
+                          >
+                            📥 Download
+                          </a>
                         </div>
                       )}
                     </div>
@@ -209,9 +244,86 @@ export default function Timeline({ entries, teamName }: TimelineProps) {
         }
         
         .timeline-file {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
           color: #a0a0b0;
           font-size: 0.9rem;
-          padding: 0.25rem 0;
+          padding: 0.5rem;
+          background: rgba(0, 0, 0, 0.2);
+          border: 1px solid rgba(0, 212, 255, 0.2);
+          border-radius: 8px;
+          margin: 0.5rem 0;
+        }
+        
+        .file-icon, .file-name, .file-size {
+          margin-right: 0.5rem;
+        }
+        
+        .file-name {
+          flex: 1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        
+        .file-download, .pdf-link {
+          color: #00d4ff;
+          text-decoration: none;
+          padding: 0.25rem 0.5rem;
+          border: 1px solid rgba(0, 212, 255, 0.3);
+          border-radius: 4px;
+          transition: all 0.3s ease;
+          white-space: nowrap;
+        }
+        
+        .file-download:hover, .pdf-link:hover {
+          background: rgba(0, 212, 255, 0.1);
+          border-color: #00d4ff;
+          color: #00ff88;
+        }
+        
+        .timeline-pdf {
+          margin: 0.5rem 0;
+        }
+        
+        .pdf-preview {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 1rem;
+          background: rgba(0, 0, 0, 0.2);
+          border: 1px solid rgba(0, 212, 255, 0.2);
+          border-radius: 8px;
+        }
+        
+        .pdf-icon {
+          font-size: 2.5rem;
+        }
+        
+        .pdf-info {
+          flex: 1;
+        }
+        
+        .pdf-name {
+          color: #ffffff;
+          font-weight: bold;
+          margin-bottom: 0.25rem;
+        }
+        
+        .pdf-size {
+          color: #666;
+          font-size: 0.8rem;
+          margin-bottom: 0.5rem;
+        }
+        
+        .pdf-iframe {
+          width: 100%;
+          height: 500px;
+          border: 1px solid rgba(0, 212, 255, 0.3);
+          border-radius: 8px;
+          margin-top: 1rem;
+          background: #ffffff;
         }
       `}</style>
     </div>

@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiZap, FiUploadCloud, FiTrendingUp, FiAward, FiLogOut, FiUpload, FiFile, FiX, FiRefreshCw, FiEdit2, FiCheck, FiX as FiCancel } from 'react-icons/fi';
+import { FiZap, FiUploadCloud, FiTrendingUp, FiAward, FiLogOut, FiRefreshCw, FiEdit2, FiCheck, FiX as FiCancel } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
 import Timeline from './components/Timeline';
 import UpdateForm from './components/UpdateForm';
@@ -33,17 +32,32 @@ interface Evaluation {
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
-  const [showDashboard, setShowDashboard] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
   const [teamName, setTeamName] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
-  const [project, setProject] = useState<any>(null);
-  const [timeline, setTimeline] = useState<any[]>([]);
-  const [updateText, setUpdateText] = useState('');
-  const [isSubmittingUpdate, setIsSubmittingUpdate] = useState(false);
+  const [project, setProject] = useState<{
+    _id: string;
+    teamName: string;
+    email: string;
+    websiteUrl?: string;
+  } | null>(null);
+  const [timeline, setTimeline] = useState<Array<{
+    _id: string;
+    type: string;
+    content?: string;
+    description?: string;
+    createdAt: string;
+    files?: Array<{
+      name: string;
+      type: string;
+      isImage: boolean;
+    }>;
+  }>>([]);
   const [isEditingTeamName, setIsEditingTeamName] = useState(false);
   const [editedTeamName, setEditedTeamName] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [isEditingWebsite, setIsEditingWebsite] = useState(false);
+  const [editedWebsiteUrl, setEditedWebsiteUrl] = useState('');
 
   // Load user and project from localStorage on mount
   React.useEffect(() => {
@@ -57,10 +71,11 @@ export default function Home() {
       fetch('/api/projects')
         .then(res => res.json())
         .then(projects => {
-          const userProject = projects.find((p: any) => p.email === userData.email);
+          const userProject = projects.find((p: { email: string; teamName: string; _id: string; websiteUrl?: string }) => p.email === userData.email);
           if (userProject) {
             setProject(userProject);
             setTeamName(userProject.teamName);
+            setWebsiteUrl(userProject.websiteUrl || '');
             localStorage.setItem('hackradar_project', JSON.stringify(userProject));
             
             // Load timeline
@@ -124,11 +139,12 @@ export default function Home() {
       // Check for existing projects by email
       const res = await fetch('/api/projects');
       const projects = await res.json();
-      const userProject = projects.find((p: any) => p.email === userData.email);
+      const userProject = projects.find((p: { email: string; teamName: string; _id: string; websiteUrl?: string }) => p.email === userData.email);
       
       if (userProject) {
         setProject(userProject);
         setTeamName(userProject.teamName);
+        setWebsiteUrl(userProject.websiteUrl || '');
         localStorage.setItem('hackradar_project', JSON.stringify(userProject));
         
         // Load timeline
@@ -171,10 +187,11 @@ export default function Home() {
       // Check if project exists
       const getRes = await fetch('/api/projects');
       const projects = await getRes.json();
-      const existing = projects.find((p: any) => p.teamName === teamName);
+      const existing = projects.find((p: { teamName: string; _id: string }) => p.teamName === teamName);
       
       if (existing) {
         setProject(existing);
+        setWebsiteUrl(existing.websiteUrl || '');
         localStorage.setItem('hackradar_project', JSON.stringify(existing));
         // Load timeline
         const timelineRes = await fetch(`/api/timeline?projectId=${existing._id}`);
@@ -222,6 +239,37 @@ export default function Home() {
     } catch (error) {
       console.error('Error updating team name:', error);
       toast.error('Failed to update team name');
+    }
+  };
+
+  const handleUpdateWebsiteUrl = async () => {
+    if (editedWebsiteUrl === websiteUrl) {
+      setIsEditingWebsite(false);
+      return;
+    }
+
+    try {
+      // Update project with website URL
+      const updatedProject = { ...project, websiteUrl: editedWebsiteUrl };
+      setProject(updatedProject);
+      setWebsiteUrl(editedWebsiteUrl);
+      localStorage.setItem('hackradar_project', JSON.stringify(updatedProject));
+      
+      // Update in database
+      await fetch('/api/projects', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          projectId: project._id,
+          websiteUrl: editedWebsiteUrl 
+        })
+      });
+      
+      toast.success('Website URL updated!');
+      setIsEditingWebsite(false);
+    } catch (error) {
+      console.error('Error updating website URL:', error);
+      toast.error('Failed to update website URL');
     }
   };
 
@@ -298,7 +346,7 @@ export default function Home() {
           // Project exists, try to get it
           const getRes = await fetch('/api/projects');
           const projects = await getRes.json();
-          const existing = projects.find((p: any) => p.teamName === teamName);
+          const existing = projects.find((p: { teamName: string; _id: string }) => p.teamName === teamName);
           if (existing) {
             currentProject = existing;
             setProject(existing);
@@ -561,12 +609,60 @@ export default function Home() {
                         </>
                       )}
                     </h2>
+                    
+                    <div className="mb-4 flex items-center gap-4">
+                      {isEditingWebsite ? (
+                        <>
+                          <input
+                            type="url"
+                            value={editedWebsiteUrl}
+                            onChange={(e) => setEditedWebsiteUrl(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleUpdateWebsiteUrl();
+                              if (e.key === 'Escape') setIsEditingWebsite(false);
+                            }}
+                            className="flex-1 bg-black bg-opacity-30 border border-cyan-400 rounded-lg p-2 text-white outline-none"
+                            placeholder="https://your-project-website.com"
+                            autoFocus
+                          />
+                          <button
+                            onClick={handleUpdateWebsiteUrl}
+                            className="bg-transparent border-none text-green-400 cursor-pointer text-xl hover:text-green-300"
+                          >
+                            <FiCheck />
+                          </button>
+                          <button
+                            onClick={() => setIsEditingWebsite(false)}
+                            className="bg-transparent border-none text-red-400 cursor-pointer text-xl hover:text-red-300"
+                          >
+                            <FiCancel />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-cyan-400 text-sm">
+                            Website: {websiteUrl || 'Not set'}
+                          </span>
+                          <button
+                            onClick={() => {
+                              setIsEditingWebsite(true);
+                              setEditedWebsiteUrl(websiteUrl || '');
+                            }}
+                            className="bg-transparent border-none text-cyan-400 cursor-pointer text-base opacity-70 transition-opacity hover:opacity-100"
+                          >
+                            <FiEdit2 />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    
                     <div className="mb-8 text-cyan-400 text-sm">
                       Project ID: {project._id}
                     </div>
                     
                     <UpdateForm 
                       projectId={project._id}
+                      websiteUrl={websiteUrl}
                       onSubmit={async (formData) => {
                         const response = await fetch('/api/timeline', {
                           method: 'POST',

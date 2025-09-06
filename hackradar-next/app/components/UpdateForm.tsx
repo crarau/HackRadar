@@ -2,17 +2,17 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { FiUpload, FiFile, FiX, FiLink, FiImage, FiFileText, FiRefreshCw } from 'react-icons/fi';
+import { FiUpload, FiFile, FiX, FiImage, FiFileText, FiRefreshCw } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 interface UpdateFormProps {
   projectId: string;
+  websiteUrl?: string;
   onSubmit: (data: FormData) => Promise<void>;
 }
 
-export default function UpdateForm({ projectId, onSubmit }: UpdateFormProps) {
+export default function UpdateForm({ projectId, websiteUrl, onSubmit }: UpdateFormProps) {
   const [updateText, setUpdateText] = useState('');
-  const [websiteUrl, setWebsiteUrl] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -78,7 +78,7 @@ export default function UpdateForm({ projectId, onSubmit }: UpdateFormProps) {
 
   const handleSubmit = async () => {
     // Check if at least one input is provided
-    if (!updateText.trim() && !websiteUrl.trim() && files.length === 0) {
+    if (!updateText.trim() && files.length === 0 && !websiteUrl) {
       toast.error('Please provide at least one type of input');
       return;
     }
@@ -93,9 +93,10 @@ export default function UpdateForm({ projectId, onSubmit }: UpdateFormProps) {
         formData.append('text', updateText);
       }
       
-      // Add URL if provided
-      if (websiteUrl.trim()) {
+      // Always include website URL if it exists (for auto-screenshot)
+      if (websiteUrl) {
         formData.append('url', websiteUrl);
+        formData.append('captureWebsite', 'true');
       }
       
       // Add files
@@ -110,7 +111,6 @@ export default function UpdateForm({ projectId, onSubmit }: UpdateFormProps) {
       
       // Clear form after successful submission
       setUpdateText('');
-      setWebsiteUrl('');
       setFiles([]);
       toast.success('Update submitted successfully!');
     } catch (error) {
@@ -127,7 +127,7 @@ export default function UpdateForm({ projectId, onSubmit }: UpdateFormProps) {
       <div className="form-section">
         <label className="form-label">
           <FiFileText className="label-icon" />
-          TEXT UPDATE (Optional)
+          TEXT UPDATE
         </label>
         <textarea
           value={updateText}
@@ -138,26 +138,12 @@ export default function UpdateForm({ projectId, onSubmit }: UpdateFormProps) {
         />
       </div>
 
-      {/* URL Input Section */}
-      <div className="form-section">
-        <label className="form-label">
-          <FiLink className="label-icon" />
-          WEBSITE URL (Optional)
-        </label>
-        <input
-          type="url"
-          value={websiteUrl}
-          onChange={(e) => setWebsiteUrl(e.target.value)}
-          className="url-input"
-          placeholder="https://your-project-website.com"
-        />
-      </div>
 
       {/* File Upload Section */}
       <div className="form-section">
         <label className="form-label">
           <FiImage className="label-icon" />
-          FILES & SCREENSHOTS (Optional - Max 10 files)
+          FILES & SCREENSHOTS (Max 10 files)
         </label>
         
         <div className="upload-hint">
@@ -241,7 +227,7 @@ export default function UpdateForm({ projectId, onSubmit }: UpdateFormProps) {
           font-size: 1rem;
         }
 
-        .text-input, .url-input {
+        .text-input {
           width: 100%;
           padding: 0.75rem;
           background: rgba(0, 0, 0, 0.3);
@@ -253,7 +239,7 @@ export default function UpdateForm({ projectId, onSubmit }: UpdateFormProps) {
           font-family: inherit;
         }
 
-        .text-input:focus, .url-input:focus {
+        .text-input:focus {
           outline: none;
           border-color: #00d4ff;
           box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);

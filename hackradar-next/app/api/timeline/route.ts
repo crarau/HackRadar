@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
-import { TimelineEntry } from '@/lib/models';
 import { ObjectId } from 'mongodb';
 
 // POST add entry to timeline
@@ -12,6 +11,8 @@ export async function POST(request: NextRequest) {
     const projectId = formData.get('projectId') as string;
     const text = formData.get('text') as string;
     const url = formData.get('url') as string;
+    const captureWebsite = formData.get('captureWebsite') as string;
+    const websiteUrl = formData.get('websiteUrl') as string;
     const fileCount = parseInt(formData.get('fileCount') as string || '0');
     const timestamp = formData.get('timestamp') as string;
     
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     
     // Handle legacy single-field submissions
     if (type || content || description) {
-      const legacyEntry: any = {
+      const legacyEntry = {
         projectId,
         type: type as 'text' | 'file' | 'image' | 'link',
         content: content || '',
@@ -62,7 +63,35 @@ export async function POST(request: NextRequest) {
     }
     
     // New multi-input submission
-    const files: any[] = [];
+    const files: Array<{
+      name: string;
+      type: string;
+      size: number;
+      data: string;
+      isImage: boolean;
+    }> = [];
+    
+    // Auto-capture website screenshot if requested
+    if (captureWebsite === 'true' && websiteUrl) {
+      // TODO: Implement website screenshot capture
+      // Options:
+      // 1. Use Puppeteer/Playwright for server-side screenshot
+      // 2. Use a screenshot API service like Screenly, ApiFlash
+      // 3. Use Vercel's og:image generation
+      
+      // For now, we'll add a placeholder indicating screenshot was requested
+      console.log(`Screenshot requested for: ${websiteUrl}`);
+      
+      // In production, this would capture and add the screenshot:
+      // const screenshot = await captureWebsiteScreenshot(websiteUrl);
+      // files.push({
+      //   name: `screenshot-${Date.now()}.png`,
+      //   type: 'image/png',
+      //   size: screenshot.length,
+      //   data: screenshot.toString('base64'),
+      //   isImage: true
+      // });
+    }
     
     // Process multiple files
     for (let i = 0; i < fileCount; i++) {
@@ -84,7 +113,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Build comprehensive entry
-    const entry: any = {
+    const entry = {
       projectId,
       type: 'update',
       text: text || '',
