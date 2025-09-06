@@ -119,7 +119,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <div className="header-left">
+        <div className="header-left" onClick={onLogout} style={{ cursor: 'pointer' }}>
           <img src="/logo.svg" alt="HackRadar" className="dashboard-logo" />
           <h1>HackRadar Dashboard</h1>
         </div>
