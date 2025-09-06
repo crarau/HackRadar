@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HackRadar QR Code</title>
+    <style>
+        @page {
+            size: 375px 812px; /* iPhone size */
+            margin: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 100%);
+            color: #ffffff;
+            width: 375px;
+            height: 812px;
+            margin: 0;
+            padding: 30px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .tagline {
+            color: #00d4ff;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 30px;
+        }
+        
+        .qr-container {
+            background: rgba(26, 26, 46, 0.6);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        .qr-title {
+            color: #00d4ff;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .qr-code {
+            width: 200px;
+            height: 200px;
+            background: white;
+            border-radius: 12px;
+            padding: 10px;
+            margin: 0 auto 20px;
+        }
+        
+        .url {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #00d4ff;
+            word-break: break-all;
+            margin-bottom: 20px;
+        }
+        
+        .instructions {
+            font-size: 0.9rem;
+            color: #a0a0b0;
+            line-height: 1.5;
+        }
+        
+        .badge {
+            background: linear-gradient(45deg, #ff6b6b, #ff9800);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="badge">🚀 LIVE HACKATHON</div>
+    
+    <div class="logo">HackRadar</div>
+    <div class="tagline">AI-Powered Hackathon Evaluation</div>
+    
+    <div class="qr-container">
+        <div class="qr-title">📱 Scan to Access Platform</div>
+        
+        <div class="qr-code">
+            <img id="qr-image" style="width: 100%; height: 100%; object-fit: contain;" alt="QR Code for HackRadar">
+        </div>
+        
+        <div class="url">https://hackradar.me/</div>
+        
+        <div class="instructions">
+            Point your phone camera at the QR code<br>
+            to access the HackRadar platform
+        </div>
+    </div>
+    
+    <script>
+        // Generate QR code using Google Charts API (reliable and fast)
+        function generateQR() {
+            const url = 'https://hackradar.me/';
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}&bgcolor=ffffff&color=0a0a1a`;
+            
+            const qrImage = document.getElementById('qr-image');
+            qrImage.src = qrUrl;
+            qrImage.onerror = function() {
+                // Fallback to Google Charts if first API fails
+                const googleQrUrl = `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(url)}`;
+                qrImage.src = googleQrUrl;
+                
+                qrImage.onerror = function() {
+                    // Ultimate fallback - show text
+                    qrImage.style.display = 'none';
+                    qrImage.parentElement.innerHTML = '<div style="padding: 40px; color: #00d4ff; font-size: 1.2rem;">Scan this URL:<br>hackradar.me</div>';
+                };
+            };
+        }
+        
+        // Generate QR code immediately
+        generateQR();
+    </script>
+</body>
+</html>

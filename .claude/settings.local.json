@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(hackradar-access.html)",
+      "Bash(powershell:*)",
+      "Bash(npm start)",
+      "Bash(taskkill:*)",
+      "Bash(git pull:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
