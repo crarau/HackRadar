@@ -10,31 +10,19 @@ export interface EvaluationScores {
   final_score: number;
 }
 
-export interface EvaluationResult {
-  scores: EvaluationScores;
-  feedback: {
-    strengths: string[];
-    weaknesses: string[];
-    recommendations: string[];
-  };
-  evidence?: string[];
-  gaps?: string[];
-}
-
-export abstract class BaseAgent {
+export class BaseAgent {
   protected name: string;
-  protected useMock: boolean;
-  protected anthropic?: Anthropic;
+  protected anthropic: Anthropic;
 
   constructor(name: string) {
     this.name = name;
-    this.useMock = process.env.USE_MOCK_EVALUATIONS === 'true' || !process.env.ANTHROPIC_API_KEY;
     
-    if (!this.useMock && process.env.ANTHROPIC_API_KEY) {
-      this.anthropic = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY
-      });
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new Error(`[${this.name}] ANTHROPIC_API_KEY is required`);
     }
+    
+    this.anthropic = new Anthropic({ apiKey });
   }
 
   protected log(message: string): void {
@@ -43,33 +31,10 @@ export abstract class BaseAgent {
     }
   }
 
-  async evaluate<TInput, TResult>(input: TInput): Promise<TResult> {
-    this.log(`Starting evaluation with ${this.useMock ? 'MOCK' : 'REAL'} mode`);
-    
-    if (this.useMock) {
-      return await this.mockEvaluate(input);
-    }
-    
+  protected async callAnthropic(prompt: string): Promise<string> {
     try {
-      return await this.realEvaluate(input);
-    } catch (error) {
-      this.log(`Error in real evaluation: ${error.message}, falling back to mock`);
-      return await this.mockEvaluate(input);
-    }
-  }
-
-  protected abstract mockEvaluate<TInput, TResult>(input: TInput): Promise<TResult>;
-  
-  protected async realEvaluate<TInput, TResult>(input: TInput): Promise<TResult> {
-    // Default implementation using Anthropic Claude 3.5
-    if (!this.anthropic) {
-      return this.mockEvaluate(input);
-    }
-
-    try {
-      const prompt = this.buildPrompt(input);
       const response = await this.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-haiku-20240307', // Fast and cheap for evaluations
         max_tokens: 1000,
         messages: [
           {
@@ -81,23 +46,23 @@ export abstract class BaseAgent {
 
       const content = response.content[0];
       if (content.type === 'text') {
-        return this.parseResponse(content.text);
+        return content.text;
       }
       
-      return this.mockEvaluate(input);
+      throw new Error('Invalid response from Anthropic');
     } catch (error) {
       this.log(`Anthropic API error: ${error}`);
-      return this.mockEvaluate(input);
+      throw error;
     }
   }
 
-  protected abstract buildPrompt<TInput>(input: TInput): string;
-  protected abstract parseResponse<TResult>(response: string): TResult;
-
-  protected generateMockScore(base: number, variance: number = 5): number {
-    const min = Math.max(0, base - variance);
-    const max = Math.min(100, base + variance);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+  protected parseJSON<T>(response: string, fallback: T): T {
+    try {
+      return JSON.parse(response) as T;
+    } catch {
+      this.log('Failed to parse JSON response, using fallback');
+      return fallback;
+    }
   }
 
   protected enforceAnchors(scores: Partial<EvaluationScores>): EvaluationScores {
@@ -110,13 +75,31 @@ export abstract class BaseAgent {
       submission_readiness: 15
     };
     
-    const enforced: Record<string, number> = {};
+    const result: EvaluationScores = {
+      clarity: 0,
+      problem_value: 0,
+      feasibility: 0,
+      originality: 0,
+      impact_convert: 0,
+      submission_readiness: 0,
+      final_score: 0
+    };
+    
+    // Apply anchors and clamp values
     for (const [key, max] of Object.entries(anchors)) {
-      const value = (scores as Record<string, number>)[key] || 0;
-      enforced[key] = Math.min(Math.max(0, value), max);
+      const value = scores[key as keyof typeof scores] || 0;
+      result[key as keyof typeof anchors] = Math.min(Math.max(0, value), max);
     }
     
-    enforced.final_score = Object.values(enforced).reduce((a: number, b: number) => a + b, 0);
-    return enforced as EvaluationScores;
+    // Calculate total
+    result.final_score = 
+      result.clarity + 
+      result.problem_value + 
+      result.feasibility + 
+      result.originality + 
+      result.impact_convert + 
+      result.submission_readiness;
+    
+    return result;
   }
 }

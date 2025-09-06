@@ -1,6 +1,6 @@
 import { Db, ObjectId } from 'mongodb';
-import { TextEvaluator } from './agents/TextEvaluator';
-import { SRTracker, ReadinessChecklist } from './agents/SRTracker';
+import { TextEvaluator, TextEvaluatorResult } from './agents/TextEvaluator';
+import { SRTracker, ReadinessChecklist, SRTrackerResult } from './agents/SRTracker';
 import { EvaluationScores } from './agents/BaseAgent';
 
 export interface Submission {
@@ -123,10 +123,14 @@ export class EvaluationService {
       })
     ]);
     
+    // Results are already properly typed
+    const textEvalResult = textEval;
+    const srEvalResult = srEval;
+    
     // Aggregate scores
     const scores = this.aggregateScores(
-      textEval as { subscores: { clarity?: number; problem_value?: number; feasibility_signal?: number; originality?: number; impact_convert?: number } },
-      srEval as { submission_readiness_score?: number }
+      textEvalResult,
+      srEvalResult
     );
     
     // Calculate delta from previous submission
@@ -144,7 +148,7 @@ export class EvaluationService {
       submission_number: submissionNumber,
       score: scores.final_score,
       delta,
-      readiness_score: srEval.submission_readiness_score,
+      readiness_score: srEvalResult.submission_readiness_score || 0,
       evaluation: {
         clarity: scores.clarity,
         problem_value: scores.problem_value,
@@ -154,9 +158,9 @@ export class EvaluationService {
         submission_readiness: scores.submission_readiness,
         final_score: scores.final_score,
         feedback: {
-          strengths: textEval.evidence || [],
-          weaknesses: textEval.gaps || [],
-          recommendations: this.generateRecommendations(textEval, srEval, scores)
+          strengths: textEvalResult.evidence || [],
+          weaknesses: textEvalResult.gaps || [],
+          recommendations: this.generateRecommendations(textEvalResult, srEvalResult, scores)
         },
         changes: Object.keys(changes).length > 0 ? changes : undefined
       }
@@ -169,7 +173,7 @@ export class EvaluationService {
         $set: {
           currentScore: scores.final_score,
           lastEvaluation: metadata.evaluation,
-          submission_readiness_checklist: srEval.checklist_update,
+          submission_readiness_checklist: srEvalResult.checklist_update || {},
           submissionCount: submissionNumber,
           updatedAt: new Date()
         }
@@ -181,15 +185,15 @@ export class EvaluationService {
       delta,
       metadata,
       sr_tracker: {
-        readiness_score: srEval.submission_readiness_score,
-        checklist: srEval.checklist_update,
-        questions: srEval.questions,
-        notes: srEval.notes
+        readiness_score: srEvalResult.submission_readiness_score || 0,
+        checklist: srEvalResult.checklist_update || {},
+        questions: srEvalResult.questions || [],
+        notes: srEvalResult.notes || []
       }
     };
   }
 
-  private aggregateScores(textEval: { subscores: { clarity?: number; problem_value?: number; feasibility_signal?: number; originality?: number; impact_convert?: number } }, srEval: { submission_readiness_score?: number }): EvaluationScores {
+  private aggregateScores(textEval: TextEvaluatorResult, srEval: SRTrackerResult): EvaluationScores {
     const scores: EvaluationScores = {
       clarity: Math.min(15, textEval.subscores.clarity || 0),
       problem_value: Math.min(20, textEval.subscores.problem_value || 0),
@@ -206,9 +210,10 @@ export class EvaluationService {
   }
 
   private calculateDelta(currentScores: EvaluationScores, previousScores: { final_score?: number; [key: string]: number | undefined }): EvaluationDelta {
-    const totalChange = currentScores.final_score - (previousScores.final_score || 0);
-    const percentChange = previousScores.final_score > 0 
-      ? (totalChange / previousScores.final_score) * 100 
+    const prevScore = previousScores.final_score || 0;
+    const totalChange = currentScores.final_score - prevScore;
+    const percentChange = prevScore > 0 
+      ? (totalChange / prevScore) * 100 
       : 0;
     
     const delta: EvaluationDelta = {
@@ -222,7 +227,7 @@ export class EvaluationService {
       const currentKey = category === 'impact' ? 'impact_convert' : category;
       const prevKey = category;
       
-      const current = (currentScores as Record<string, number>)[currentKey] || 0;
+      const current = (currentScores as unknown as Record<string, number>)[currentKey] || 0;
       const previous = previousScores[prevKey] || 0;
       const change = current - previous;
       
@@ -251,7 +256,7 @@ export class EvaluationService {
     ];
     
     for (const cat of categories) {
-      const current = (currentScores as Record<string, number>)[cat.key] || 0;
+      const current = (currentScores as unknown as Record<string, number>)[cat.key] || 0;
       const previous = previousScores[cat.prev || cat.key] || 0;
       const change = current - previous;
       
@@ -279,11 +284,11 @@ export class EvaluationService {
     return explanations[category] || `${category} ${improving ? 'improved' : 'declined'}`;
   }
 
-  private generateRecommendations(textEval: { gaps?: string[] }, srEval: { submission_readiness_score?: number }, scores: EvaluationScores): string[] {
+  private generateRecommendations(textEval: TextEvaluatorResult, srEval: SRTrackerResult, scores: EvaluationScores): string[] {
     const recommendations: string[] = [];
     
     // Priority fixes from gaps
-    if (textEval.gaps?.length > 0) {
+    if (textEval.gaps && textEval.gaps.length > 0) {
       recommendations.push(...textEval.gaps.slice(0, 2));
     }
     

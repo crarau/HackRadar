@@ -434,7 +434,7 @@ export default function Home() {
                 >
                   <a 
                     href="/public-dashboard" 
-                    className="access-button mb-4"
+                    className="access-button mb-4 mr-4"
                     style={{ 
                       background: 'linear-gradient(135deg, #00d4ff, #0099cc)',
                       marginBottom: '1rem',

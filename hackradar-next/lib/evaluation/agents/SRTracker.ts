@@ -3,12 +3,12 @@ import { BaseAgent } from './BaseAgent';
 export interface ChecklistItem {
   asserted: boolean;
   verified: boolean;
-  evidence?: string;
-  url?: string;
   files?: string[];
-  last_checked_at?: Date;
+  url?: string;
+  evidence?: string;
   notes?: string;
   count?: number;
+  last_checked_at?: Date;
 }
 
 export interface ReadinessChecklist {
@@ -26,11 +26,7 @@ export interface SRTrackerInput {
   userMessage?: string;
   currentSnapshot?: {
     text?: string;
-    files?: Array<{
-      name: string;
-      type: string;
-      size: number;
-    }>;
+    files?: Array<{ name: string; type: string; size: number }>;
     url?: string;
   };
   progressState?: {
@@ -46,7 +42,7 @@ export interface SRTrackerResult {
 }
 
 export class SRTracker extends BaseAgent {
-  private pointsMap = {
+  private readonly pointsMap = {
     demo_link: 2,
     demo_video: 2,
     repo: 2,
@@ -61,170 +57,37 @@ export class SRTracker extends BaseAgent {
     super('SRTracker');
   }
 
-  private calculateReadinessScore(checklist: ReadinessChecklist): number {
-    let score = 0;
-    
-    for (const [item, points] of Object.entries(this.pointsMap)) {
-      const status = (checklist as Record<string, ChecklistItem>)[item];
-      if (!status) continue;
-      
-      if (status.verified) {
-        // Full points for verified items
-        score += points;
-      } else if (status.asserted) {
-        // Half points for asserted but not verified
-        score += points / 2;
-      }
-    }
-    
-    return Math.min(15, score);
-  }
-
-  protected async mockEvaluate(input: SRTrackerInput): Promise<SRTrackerResult> {
+  async evaluate(input: SRTrackerInput): Promise<SRTrackerResult> {
     const { userMessage, currentSnapshot, progressState } = input;
     const checklist = progressState?.submission_readiness_checklist || this.getEmptyChecklist();
     const questions: string[] = [];
     const notes: string[] = [];
-    
-    // Check files in current snapshot
+
+    // Analyze files if present
     if (currentSnapshot?.files) {
-      for (const file of currentSnapshot.files) {
-        const fileName = file.name.toLowerCase();
-        
-        // Check for demo video
-        if (fileName.includes('demo') && (fileName.endsWith('.mp4') || fileName.endsWith('.mov') || fileName.endsWith('.webm'))) {
-          checklist.demo_video.verified = true;
-          checklist.demo_video.files = [file.name];
-          checklist.demo_video.evidence = `Found demo video: ${file.name}`;
-          checklist.demo_video.last_checked_at = new Date();
-          notes.push(`Demo video verified: ${file.name}`);
-        }
-        
-        // Check for slides/PDF
-        if (fileName.endsWith('.pdf') || fileName.endsWith('.pptx') || fileName.endsWith('.ppt')) {
-          checklist.slides_pdf.verified = true;
-          checklist.slides_pdf.files = [file.name];
-          checklist.slides_pdf.evidence = `Found presentation: ${file.name}`;
-          checklist.slides_pdf.last_checked_at = new Date();
-          notes.push(`Slides verified: ${file.name}`);
-        }
-        
-        // Check for screenshots
-        if (fileName.includes('screenshot') || fileName.includes('screen') || 
-            (fileName.match(/\.(png|jpg|jpeg)$/i) && (fileName.includes('ui') || fileName.includes('app')))) {
-          if (!checklist.screenshots.files) checklist.screenshots.files = [];
-          if (!checklist.screenshots.files.includes(file.name)) {
-            checklist.screenshots.files.push(file.name);
-          }
-          checklist.screenshots.count = checklist.screenshots.files.length;
-          checklist.screenshots.verified = true;
-          checklist.screenshots.evidence = `Found ${checklist.screenshots.count} screenshots`;
-          checklist.screenshots.last_checked_at = new Date();
-        }
-      }
+      this.analyzeFiles(currentSnapshot.files, checklist, notes);
     }
-    
-    // Check text content for links and evidence
+
+    // Analyze text content if present
     if (currentSnapshot?.text) {
-      const text = currentSnapshot.text.toLowerCase();
-      
-      // Check for repo link
-      if (text.includes('github.com/') || text.includes('gitlab.com/') || text.includes('bitbucket.org/')) {
-        const repoMatch = text.match(/(github|gitlab|bitbucket)\.(com|org)\/[\w-]+\/[\w-]+/);
-        if (repoMatch) {
-          checklist.repo.verified = true;
-          checklist.repo.url = repoMatch[0];
-          checklist.repo.evidence = `Repository link found`;
-          checklist.repo.last_checked_at = new Date();
-          notes.push(`Repo verified: ${repoMatch[0]}`);
-        }
-      }
-      
-      // Check for demo link
-      if ((text.includes('demo') || text.includes('try')) && 
-          (text.includes('http://') || text.includes('https://') || text.includes('.com') || text.includes('.io'))) {
-        checklist.demo_link.asserted = true;
-        checklist.demo_link.evidence = 'Demo link mentioned in text';
-        if (currentSnapshot.url) {
-          checklist.demo_link.url = currentSnapshot.url;
-          checklist.demo_link.verified = true;
-          notes.push('Demo link verified');
-        } else {
-          notes.push('Demo link asserted (needs verification)');
-        }
-      }
-      
-      // Check for README mentions
-      if (text.includes('readme') || text.includes('installation') || text.includes('setup') || text.includes('instructions')) {
-        checklist.readme_run_steps.asserted = true;
-        checklist.readme_run_steps.evidence = 'Setup instructions mentioned';
-      }
-      
-      // Check if built during hackathon
-      if ((text.includes('built') || text.includes('created') || text.includes('developed')) && 
-          (text.includes('weekend') || text.includes('hackathon') || text.includes('48 hours') || text.includes('24 hours'))) {
-        checklist.built_during_hack.verified = true;
-        checklist.built_during_hack.notes = 'Confirmed built during hackathon';
-      }
-      
-      // Check for limitations/next steps
-      if (text.includes('limitation') || text.includes('next step') || text.includes('future') || text.includes('roadmap')) {
-        checklist.known_limits_next_steps.asserted = true;
-        checklist.known_limits_next_steps.notes = 'Limitations/next steps mentioned';
-      }
+      this.analyzeText(currentSnapshot.text, currentSnapshot.url, checklist, notes);
     }
-    
-    // Process user message responses
+
+    // Process user message if present
     if (userMessage) {
-      const msg = userMessage.toLowerCase();
-      
-      // User affirming they have something
-      if (msg.includes('yes') || msg.includes('have it') || msg.includes('we have') || msg.includes('already')) {
-        // Check what we asked about last and mark as asserted
-        for (const item of Object.keys(this.pointsMap)) {
-          const checklistItem = (checklist as Record<string, ChecklistItem>)[item];
-          if (!checklistItem.asserted && !checklistItem.verified) {
-            checklistItem.asserted = true;
-            checklistItem.evidence = 'User confirmed having this';
-            notes.push(`${item} marked as asserted based on user response`);
-            break;
-          }
-        }
-      }
+      this.processUserMessage(userMessage, checklist, notes);
     }
-    
-    // Generate questions for missing items (max 1 question)
-    const missingItems: string[] = [];
-    for (const [item, status] of Object.entries(checklist)) {
-      if (!status.asserted && !status.verified) {
-        missingItems.push(item);
-      }
-    }
-    
-    if (missingItems.length > 0 && questions.length === 0) {
-      const item = missingItems[0];
-      const questionMap: Record<string, string> = {
-        demo_video: 'Do you already have a ≤2-min demo video?',
-        demo_link: 'Do you have a working demo link?',
-        repo: 'Do you have a GitHub/GitLab repository?',
-        readme_run_steps: 'Does your README include setup/run instructions?',
-        slides_pdf: 'Do you have presentation slides (≤7 pages)?',
-        screenshots: 'Do you have 3-5 screenshots of your app?',
-        built_during_hack: 'Was this built during the hackathon?',
-        known_limits_next_steps: 'Have you documented limitations and next steps?'
-      };
-      
-      if (questionMap[item]) {
-        questions.push(questionMap[item]);
-      }
-    }
-    
-    // Calculate final readiness score
+
+    // Generate questions for missing items
+    const missingItems = this.getMissingItems(checklist);
+    questions.push(...this.generateQuestions(missingItems));
+
+    // Calculate readiness score
     const submissionReadinessScore = this.calculateReadinessScore(checklist);
-    
+
     this.log(`Readiness score: ${submissionReadinessScore}/15`);
     this.log(`Missing items: ${missingItems.join(', ') || 'None'}`);
-    
+
     return {
       checklist_update: checklist,
       submission_readiness_score: submissionReadinessScore,
@@ -233,28 +96,188 @@ export class SRTracker extends BaseAgent {
     };
   }
 
+  private analyzeFiles(
+    files: Array<{ name: string; type: string; size: number }>,
+    checklist: ReadinessChecklist,
+    notes: string[]
+  ): void {
+    for (const file of files) {
+      const fileName = file.name.toLowerCase();
+      
+      // Check for demo video
+      if (this.isVideoFile(fileName)) {
+        checklist.demo_video.verified = true;
+        checklist.demo_video.files = [file.name];
+        checklist.demo_video.evidence = `Found demo video: ${file.name}`;
+        checklist.demo_video.last_checked_at = new Date();
+        notes.push(`Demo video verified: ${file.name}`);
+      }
+      
+      // Check for presentation
+      if (this.isPresentationFile(fileName)) {
+        checklist.slides_pdf.verified = true;
+        checklist.slides_pdf.files = [file.name];
+        checklist.slides_pdf.evidence = `Found presentation: ${file.name}`;
+        checklist.slides_pdf.last_checked_at = new Date();
+        notes.push(`Slides verified: ${file.name}`);
+      }
+      
+      // Check for screenshots
+      if (this.isScreenshot(fileName)) {
+        if (!checklist.screenshots.files) checklist.screenshots.files = [];
+        if (!checklist.screenshots.files.includes(file.name)) {
+          checklist.screenshots.files.push(file.name);
+        }
+        checklist.screenshots.count = checklist.screenshots.files.length;
+        checklist.screenshots.verified = checklist.screenshots.count >= 3;
+        checklist.screenshots.evidence = `Found ${checklist.screenshots.count} screenshots`;
+        checklist.screenshots.last_checked_at = new Date();
+      }
+    }
+  }
+
+  private analyzeText(
+    text: string,
+    url: string | undefined,
+    checklist: ReadinessChecklist,
+    notes: string[]
+  ): void {
+    const lowerText = text.toLowerCase();
+    
+    // Check for repository
+    const repoMatch = lowerText.match(/(github|gitlab|bitbucket)\.(com|org)\/[\w-]+\/[\w-]+/);
+    if (repoMatch) {
+      checklist.repo.verified = true;
+      checklist.repo.url = repoMatch[0];
+      checklist.repo.evidence = 'Repository link found';
+      checklist.repo.last_checked_at = new Date();
+      notes.push(`Repo verified: ${repoMatch[0]}`);
+    }
+    
+    // Check for demo link
+    if (url && (lowerText.includes('demo') || lowerText.includes('try'))) {
+      checklist.demo_link.verified = true;
+      checklist.demo_link.url = url;
+      checklist.demo_link.evidence = 'Demo link provided';
+      notes.push('Demo link verified');
+    }
+    
+    // Check for README/setup mentions
+    if (lowerText.includes('readme') || lowerText.includes('setup') || lowerText.includes('installation')) {
+      checklist.readme_run_steps.asserted = true;
+      checklist.readme_run_steps.evidence = 'Setup instructions mentioned';
+    }
+    
+    // Check if built during hackathon
+    if ((lowerText.includes('built') || lowerText.includes('created')) && 
+        (lowerText.includes('hackathon') || lowerText.includes('48 hours'))) {
+      checklist.built_during_hack.verified = true;
+      checklist.built_during_hack.notes = 'Confirmed built during hackathon';
+    }
+    
+    // Check for limitations/next steps
+    if (lowerText.includes('limitation') || lowerText.includes('next step') || lowerText.includes('future')) {
+      checklist.known_limits_next_steps.asserted = true;
+      checklist.known_limits_next_steps.notes = 'Limitations/next steps mentioned';
+    }
+  }
+
+  private processUserMessage(
+    message: string,
+    checklist: ReadinessChecklist,
+    notes: string[]
+  ): void {
+    const lowerMsg = message.toLowerCase();
+    
+    if (lowerMsg.includes('yes') || lowerMsg.includes('have it')) {
+      // Mark first unverified item as asserted
+      const items = Object.keys(this.pointsMap) as Array<keyof ReadinessChecklist>;
+      for (const item of items) {
+        if (!checklist[item].asserted && !checklist[item].verified) {
+          checklist[item].asserted = true;
+          checklist[item].evidence = 'User confirmed';
+          notes.push(`${item} marked as asserted`);
+          break;
+        }
+      }
+    }
+  }
+
+  private getMissingItems(checklist: ReadinessChecklist): string[] {
+    const missing: string[] = [];
+    const items = Object.keys(this.pointsMap) as Array<keyof ReadinessChecklist>;
+    
+    for (const item of items) {
+      if (!checklist[item].verified && !checklist[item].asserted) {
+        missing.push(item);
+      }
+    }
+    
+    return missing;
+  }
+
+  private generateQuestions(missingItems: string[]): string[] {
+    const questionMap: Record<string, string> = {
+      demo_link: 'Do you have a live demo URL?',
+      demo_video: 'Do you have a demo video (2-3 minutes)?',
+      repo: 'Is your code on GitHub/GitLab?',
+      readme_run_steps: 'Does your README include setup instructions?',
+      slides_pdf: 'Do you have presentation slides?',
+      screenshots: 'Do you have 3-5 screenshots?',
+      built_during_hack: 'Was this built during the hackathon?',
+      known_limits_next_steps: 'Have you documented limitations and next steps?'
+    };
+    
+    return missingItems
+      .slice(0, 3) // Ask about 3 items at most
+      .map(item => questionMap[item])
+      .filter(Boolean);
+  }
+
+  private calculateReadinessScore(checklist: ReadinessChecklist): number {
+    let score = 0;
+    const items = Object.keys(this.pointsMap) as Array<keyof ReadinessChecklist>;
+    
+    for (const item of items) {
+      const points = this.pointsMap[item];
+      const checklistItem = checklist[item];
+      
+      if (checklistItem.verified) {
+        score += points; // Full points for verified
+      } else if (checklistItem.asserted) {
+        score += points * 0.5; // Half points for asserted
+      }
+    }
+    
+    return Math.min(15, Math.round(score));
+  }
+
   private getEmptyChecklist(): ReadinessChecklist {
-    const checklist: Record<string, ChecklistItem> = {};
-    for (const item of Object.keys(this.pointsMap)) {
+    const items = Object.keys(this.pointsMap) as Array<keyof ReadinessChecklist>;
+    const checklist = {} as ReadinessChecklist;
+    
+    for (const item of items) {
       checklist[item] = {
         asserted: false,
-        verified: false,
-        evidence: undefined,
-        last_checked_at: undefined
+        verified: false
       };
     }
-    return checklist as ReadinessChecklist;
+    
+    return checklist;
   }
 
-  protected buildPrompt(_input: SRTrackerInput): string {
-    return `Check submission readiness for hackathon. Return JSON with checklist status.`;
+  private isVideoFile(fileName: string): boolean {
+    return fileName.includes('demo') && 
+           /\.(mp4|mov|webm|avi)$/i.test(fileName);
   }
 
-  protected parseResponse(response: string): SRTrackerResult {
-    try {
-      return JSON.parse(response);
-    } catch {
-      return this.mockEvaluate({});
-    }
+  private isPresentationFile(fileName: string): boolean {
+    return /\.(pdf|pptx?|key)$/i.test(fileName);
+  }
+
+  private isScreenshot(fileName: string): boolean {
+    return (fileName.includes('screenshot') || fileName.includes('screen')) ||
+           (/\.(png|jpg|jpeg)$/i.test(fileName) && 
+            (fileName.includes('ui') || fileName.includes('app')));
   }
 }
