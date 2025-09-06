@@ -1,0 +1,37 @@
+🚀 HackRadar.me is LIVE!
+
+90 minutes at @AgiVentures hackathon and we're already deployed!
+
+Built an AI system that gives hackathon teams instant feedback as they build. No more waiting til the end.
+
+✅ Domain → Deployed in 1.5 hours
+✅ Full stack with auth & DB
+✅ GPT-4 evaluations live
+
+Check it: hackradar.me
+
+#AGIV #AGIVenturesCanada #BuildToConvert #ShipIt
+
+---
+
+THREAD VERSION (if you want to do a thread):
+
+1/ 🚀 We just shipped HackRadar.me - 90 minutes from zero to deployed at @AgiVentures Hackathon 3.0!
+
+2/ What we built: AI-powered real-time evaluation for hackathon teams. Upload your pitch deck, code, or docs → get instant scoring & feedback.
+
+3/ The speed is unreal:
+• Bought domain (Namecheap)
+• Set up DNS (Cloudflare)  
+• Deployed (Vercel)
+• Connected MongoDB
+• Integrated GPT-4
+• Google Auth working
+
+All in 90 minutes.
+
+4/ Teams can now get continuous feedback instead of waiting until judging. This changes everything for hackathon builders.
+
+5/ Live at hackradar.me - building at @InvestOttawa with an incredible team. This is what happens when you ship fast!
+
+#AGIV #AGIVenturesCanada #BuildToConvert

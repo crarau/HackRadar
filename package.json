@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "hackradar",
   "version": "1.0.0",
   "description": "HackRadar - Full-stack application for tracking and analyzing hackathons",
@@ -22,4 +23,9 @@
     "frontend",
     "backend"
   ]
+=======
+  "devDependencies": {
+    "puppeteer": "^24.19.0"
+  }
+>>>>>>> 03262794152e085cb0f3841d1296e8e220979a53
 }

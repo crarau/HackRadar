@@ -1,0 +1,23 @@
+🚀 HackRadar.me is LIVE!
+
+1.5 hours in at AGI Ventures Canada Hackathon 3.0 and we're already in production!
+
+We just shipped an AI-powered real-time evaluation system that gives hackathon teams instant feedback as they build. No more waiting until the end to know if you're on track.
+
+✅ Domain bought (Namecheap)
+✅ DNS configured (Cloudflare)
+✅ Deployed on Vercel 
+✅ SSL certificates active
+✅ Google Authentication working
+✅ MongoDB Atlas connected
+✅ Next.js + React 19 running
+✅ GPT-4 integrated
+✅ Live at https://hackradar.me
+
+Teams can upload anything - PDFs, code, pitch decks - and get scored instantly across multiple criteria with actionable feedback.
+
+The speed of building at Invest Ottawa is unreal. 90 minutes from zero to deployed!
+
+Check it out: https://hackradar.me
+
+#AGIVenturesCanada #AGIV #BuildToConvert #AI #Hackathon #ShipIt #Ottawa
