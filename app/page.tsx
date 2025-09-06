@@ -59,8 +59,11 @@ export default function Home() {
     toast.success('File removed');
   };
 
-  const handleLoginSuccess = async (credentialResponse: { credential: string }) => {
+  const handleLoginSuccess = async (credentialResponse: { credential?: string }) => {
     try {
+      if (!credentialResponse.credential) {
+        throw new Error('No credential received');
+      }
       const decoded = JSON.parse(atob(credentialResponse.credential.split('.')[1]));
       const userData: User = {
         email: decoded.email,
