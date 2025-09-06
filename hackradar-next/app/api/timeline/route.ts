@@ -161,7 +161,6 @@ export async function POST(request: NextRequest) {
     
     // Trigger evaluation for this submission
     let evaluationResult = null;
-    let scoreUpdateEntry = null;
     
     try {
       const evaluationService = new EvaluationService(db);
@@ -189,27 +188,8 @@ export async function POST(request: NextRequest) {
         }
       );
       
-      // Create a score update entry if there's a delta
-      if (evaluation.delta && evaluation.delta.total_change !== 0) {
-        const direction = evaluation.delta.direction;
-        const icon = direction === 'up' ? '📈' : direction === 'down' ? '📉' : '➡️';
-        const arrow = direction === 'up' ? '↗️' : direction === 'down' ? '↘️' : '→';
-        const sign = evaluation.delta.total_change > 0 ? '+' : '';
-        
-        scoreUpdateEntry = {
-          projectId,
-          createdAt: new Date(Date.now() + 1000), // 1 second after main entry
-          text: `📊 Score Update: ${evaluation.scores.final_score}/100 (${icon} ${sign}${evaluation.delta.total_change.toFixed(0)} points, ${arrow} ${evaluation.delta.percent_change.toFixed(1)}%)`,
-          metadata: {
-            type: 'score_update',
-            score: evaluation.scores.final_score,
-            delta: evaluation.delta,
-            changes: evaluation.metadata.evaluation.changes
-          }
-        };
-        
-        await db.collection('timeline').insertOne(scoreUpdateEntry);
-      }
+      // Don't create separate score update entries anymore
+      // The score is already attached to the main submission entry via metadata
       
       // Update project's updatedAt and current score
       await db.collection('projects').updateOne(
@@ -231,9 +211,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       entryId: result.insertedId,
-      entry: { ...entry, _id: result.insertedId },
-      evaluation: evaluationResult,
-      scoreUpdate: scoreUpdateEntry
+      entry: { ...entry, _id: result.insertedId, metadata: evaluationResult?.metadata },
+      evaluation: evaluationResult
     });
     
   } catch (error) {

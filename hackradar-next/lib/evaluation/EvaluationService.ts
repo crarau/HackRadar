@@ -59,7 +59,7 @@ export class EvaluationService {
     this.srTracker = new SRTracker();
   }
 
-  async evaluateSubmission(projectId: string, submission: Submission): Promise<{
+  async evaluateSubmission(projectId: string, submission: Submission, addDelay: boolean = true): Promise<{
     scores: EvaluationScores;
     delta: EvaluationDelta | null;
     metadata: EvaluationMetadata;
@@ -100,6 +100,12 @@ export class EvaluationService {
       files,
       url
     };
+    
+    // Add processing delay to simulate agent thinking (2-4 seconds)
+    if (addDelay) {
+      const delayMs = 2000 + Math.random() * 2000; // 2-4 seconds
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
     
     // Run evaluations in parallel
     const [textEval, srEval] = await Promise.all([
