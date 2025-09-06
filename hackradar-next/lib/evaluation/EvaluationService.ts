@@ -202,16 +202,37 @@ export class EvaluationService {
       }
     };
 
-    // Update project with latest evaluation
+    // Update project with latest evaluation and detailed scores
+    console.log(`\n💾 [EvaluationService] Saving to database:`);
+    console.log(`  Project ID: ${projectId}`);
+    console.log(`  Final Score: ${scores.final_score}`);
+    console.log(`  Category Scores:`, {
+      clarity: scores.clarity,
+      problem_value: scores.problem_value,
+      feasibility: scores.feasibility,
+      originality: scores.originality,
+      impact_convert: scores.impact_convert,
+      submission_readiness: scores.submission_readiness
+    });
+    
     await this.db.collection('projects').updateOne(
       { _id: new ObjectId(projectId) },
       {
         $set: {
           currentScore: scores.final_score,
+          categoryScores: {
+            clarity: scores.clarity,
+            problem_value: scores.problem_value,
+            feasibility: scores.feasibility,
+            originality: scores.originality,
+            impact_convert: scores.impact_convert,
+            submission_readiness: scores.submission_readiness
+          },
           lastEvaluation: metadata.evaluation,
           submission_readiness_checklist: srEvalResult.checklist_update || {},
           submissionCount: submissionNumber,
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          lastEvaluatedAt: new Date()
         }
       }
     );
@@ -248,17 +269,32 @@ export class EvaluationService {
   }
 
   private aggregateScores(textEval: TextEvaluatorResult, srEval: SRTrackerResult): EvaluationScores {
+    // Log what we're aggregating for debugging
+    console.log('\n📊 [EvaluationService] Aggregating scores:');
+    console.log('TextEval subscores:', textEval.subscores);
+    console.log('SRTracker readiness score:', srEval.submission_readiness_score);
+    
     const scores: EvaluationScores = {
       clarity: Math.min(15, textEval.subscores.clarity || 0),
       problem_value: Math.min(20, textEval.subscores.problem_value || 0),
-      feasibility: Math.min(15, textEval.subscores.feasibility_signal || 5),
-      originality: Math.min(15, textEval.subscores.originality || 5),
+      feasibility: Math.min(15, textEval.subscores.feasibility_signal || 0), // Changed from fallback 5 to 0
+      originality: Math.min(15, textEval.subscores.originality || 0), // Changed from fallback 5 to 0
       impact_convert: Math.min(20, textEval.subscores.impact_convert || 0),
       submission_readiness: Math.min(15, srEval.submission_readiness_score || 0),
       final_score: 0
     };
     
-    scores.final_score = Object.values(scores).reduce((a, b) => a + b, 0) - scores.final_score;
+    // Calculate final score properly
+    scores.final_score = 
+      scores.clarity + 
+      scores.problem_value + 
+      scores.feasibility + 
+      scores.originality + 
+      scores.impact_convert + 
+      scores.submission_readiness;
+    
+    console.log('Aggregated scores:', scores);
+    console.log('Final score:', scores.final_score);
     
     return scores;
   }

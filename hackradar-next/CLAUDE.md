@@ -74,3 +74,46 @@ import Image from 'next/image'
 ✅ Authentication: Google OAuth
 
 **Remember: A failing build means a broken production deployment!**
+
+## Database Management Scripts
+
+### Clean and Insert Mock Data
+Always clean existing data before inserting mock data to avoid conflicts.
+
+#### Available Scripts:
+```bash
+# Full clean and insert mock EcoTracker data
+node scripts/simulate-project.js [projectId] [scenario]
+
+# Scenarios available:
+# - ecotracker: AI sustainability platform (score: 55)
+# - healthhub: Telemedicine AI (score: 72)
+# - fintech: Blockchain payments (score: 83)
+# - edtech: AI tutor (score: 67)
+# - empty: Clean slate
+
+# Example for specific project:
+node scripts/simulate-project.js 68bc5da3a1e502fdc1292a65 ecotracker
+```
+
+#### Clean Before Insert Process:
+1. Script automatically cleans ALL existing timeline entries
+2. Updates project metadata (team name, score, description)
+3. Inserts fresh mock data without conflicts
+4. Verifies final state
+
+#### Important Project IDs:
+- Main testing project: `68bc5da3a1e502fdc1292a65`
+- EcoTracker project: `68bc936eaec499fa3db4f7eb`
+- User email: `ciprarau@gmail.com`
+
+### Verification Scripts:
+```bash
+# Check current state of a project
+node scripts/check-ecotracker-ui.js
+
+# Full clean for a user
+node scripts/full-clean.js ciprarau@gmail.com
+```
+
+**IMPORTANT**: The simulate-project.js script ALWAYS cleans before inserting to ensure no data conflicts.

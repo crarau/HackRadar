@@ -56,6 +56,31 @@ export default function Home() {
       data: string;
       isImage: boolean;
     }>;
+    metadata?: {
+      type?: string;
+      submission_number?: number;
+      score?: number;
+      delta?: {
+        total_change: number;
+        percent_change: number;
+        direction: 'up' | 'down' | 'stable';
+      };
+      readiness_score?: number;
+      evaluation?: {
+        clarity: number;
+        problem_value: number;
+        feasibility: number;
+        originality: number;
+        impact: number;
+        submission_readiness: number;
+        final_score: number;
+        feedback?: {
+          strengths: string[];
+          weaknesses: string[];
+          recommendations: string[];
+        };
+      };
+    };
   }>>([]);
   const [isEditingTeamName, setIsEditingTeamName] = useState(false);
   const [editedTeamName, setEditedTeamName] = useState('');
@@ -557,6 +582,96 @@ export default function Home() {
                         </>
                       )}
                     </h2>
+                    
+                    {/* Display current score from latest timeline entry */}
+                    {timeline.length > 0 && (() => {
+                      // Find the latest entry with a score
+                      const latestWithScore = [...timeline]
+                        .reverse()
+                        .find(entry => entry.metadata?.evaluation?.final_score !== undefined);
+                      
+                      if (latestWithScore?.metadata?.evaluation) {
+                        const evaluation = latestWithScore.metadata.evaluation;
+                        const delta = latestWithScore.metadata.delta;
+                        
+                        return (
+                          <div className="score-display mb-6" style={{
+                            background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.05))',
+                            border: '1px solid rgba(0, 212, 255, 0.3)',
+                            borderRadius: '12px',
+                            padding: '1.5rem',
+                            marginBottom: '1.5rem'
+                          }}>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ 
+                                fontSize: '3rem', 
+                                fontWeight: 'bold',
+                                background: 'linear-gradient(45deg, #00d4ff, #00ff88)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                marginBottom: '0.5rem'
+                              }}>
+                                {evaluation.final_score}/100
+                              </div>
+                              {delta && delta.total_change !== 0 && (
+                                <div style={{
+                                  fontSize: '1.2rem',
+                                  color: delta.direction === 'up' ? '#00ff88' : '#ff6b6b'
+                                }}>
+                                  {delta.direction === 'up' ? '📈' : '📉'} 
+                                  {delta.total_change > 0 ? '+' : ''}{delta.total_change} points
+                                </div>
+                              )}
+                              <div style={{ 
+                                marginTop: '1rem',
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(3, 1fr)',
+                                gap: '1rem',
+                                fontSize: '0.9rem'
+                              }}>
+                                <div>
+                                  <div style={{ color: '#666' }}>Clarity</div>
+                                  <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
+                                    {evaluation.clarity || 0}/15
+                                  </div>
+                                </div>
+                                <div>
+                                  <div style={{ color: '#666' }}>Problem</div>
+                                  <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
+                                    {evaluation.problem_value || 0}/20
+                                  </div>
+                                </div>
+                                <div>
+                                  <div style={{ color: '#666' }}>Feasibility</div>
+                                  <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
+                                    {evaluation.feasibility || 0}/15
+                                  </div>
+                                </div>
+                                <div>
+                                  <div style={{ color: '#666' }}>Originality</div>
+                                  <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
+                                    {evaluation.originality || 0}/15
+                                  </div>
+                                </div>
+                                <div>
+                                  <div style={{ color: '#666' }}>Impact</div>
+                                  <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
+                                    {evaluation.impact || 0}/20
+                                  </div>
+                                </div>
+                                <div>
+                                  <div style={{ color: '#666' }}>Readiness</div>
+                                  <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
+                                    {evaluation.submission_readiness || 0}/15
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                     
                     <div className="mb-6">
                       <style jsx>{`
