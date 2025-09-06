@@ -283,6 +283,50 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editedWebsiteUrl, websiteChanged]);
 
+  // Bouncing balls physics engine
+  React.useEffect(() => {
+    if (!user) { // Only run on landing page
+      const balls = [
+        { x: 10, y: 20, vx: 0.8, vy: 0.6, id: 1 },
+        { x: 80, y: 70, vx: -0.5, vy: -0.4, id: 2 },
+        { x: 50, y: 30, vx: 0.7, vy: -0.8, id: 3 }
+      ];
+
+      const updateBalls = () => {
+        balls.forEach(ball => {
+          // Update position
+          ball.x += ball.vx;
+          ball.y += ball.vy;
+
+          // Bounce off edges (with some padding for the gradient size)
+          if (ball.x <= 5 || ball.x >= 95) {
+            ball.vx = -ball.vx;
+            ball.x = Math.max(5, Math.min(95, ball.x));
+          }
+          if (ball.y <= 5 || ball.y >= 95) {
+            ball.vy = -ball.vy;
+            ball.y = Math.max(5, Math.min(95, ball.y));
+          }
+        });
+
+        // Update CSS variables
+        const landingPage = document.querySelector('.landing-page');
+        if (landingPage) {
+          landingPage.style.setProperty('--x1', `${balls[0].x}%`);
+          landingPage.style.setProperty('--y1', `${balls[0].y}%`);
+          landingPage.style.setProperty('--x2', `${balls[1].x}%`);
+          landingPage.style.setProperty('--y2', `${balls[1].y}%`);
+          landingPage.style.setProperty('--x3', `${balls[2].x}%`);
+          landingPage.style.setProperty('--y3', `${balls[2].y}%`);
+        }
+      };
+
+      const animationId = setInterval(updateBalls, 16); // ~60fps
+
+      return () => clearInterval(animationId);
+    }
+  }, [user]);
+
 
 
   return (
@@ -388,6 +432,17 @@ export default function Home() {
                   transition={{ duration: 0.5, delay: 0.8 }}
                   className="access-button-container"
                 >
+                  <a 
+                    href="/public-dashboard" 
+                    className="access-button mb-4"
+                    style={{ 
+                      background: 'linear-gradient(135deg, #00d4ff, #0099cc)',
+                      marginBottom: '1rem',
+                      display: 'inline-block'
+                    }}
+                  >
+                    🏆 View Live Leaderboard
+                  </a>
                   <a 
                     href="/hackradar-access.html" 
                     className="access-button"
