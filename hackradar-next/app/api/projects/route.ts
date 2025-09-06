@@ -94,3 +94,60 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// PUT update a project
+export async function PUT(request: NextRequest) {
+  try {
+    const db = await getDatabase();
+    const body = await request.json();
+    
+    const { projectId, websiteUrl, teamName } = body;
+    
+    if (!projectId) {
+      return NextResponse.json(
+        { error: 'Project ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    const updateData: {
+      updatedAt: Date;
+      websiteUrl?: string;
+      teamName?: string;
+    } = {
+      updatedAt: new Date()
+    };
+    
+    if (websiteUrl !== undefined) {
+      updateData.websiteUrl = websiteUrl;
+    }
+    
+    if (teamName !== undefined) {
+      updateData.teamName = teamName;
+    }
+    
+    const result = await db.collection('projects').updateOne(
+      { _id: new ObjectId(projectId) },
+      { $set: updateData }
+    );
+    
+    if (result.matchedCount === 0) {
+      return NextResponse.json(
+        { error: 'Project not found' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Project updated successfully'
+    });
+    
+  } catch (error) {
+    console.error('Error updating project:', error);
+    return NextResponse.json(
+      { error: 'Failed to update project' },
+      { status: 500 }
+    );
+  }
+}

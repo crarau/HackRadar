@@ -5,7 +5,7 @@ import { FiZap, FiUploadCloud, FiTrendingUp, FiAward } from 'react-icons/fi';
 import './LandingPage.css';
 
 interface LandingPageProps {
-  onLogin: (credentialResponse: any) => void;
+  onLogin: (credentialResponse: { credential?: string }) => void;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
@@ -69,25 +69,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           className="features-grid"
         >
           <div className="feature-card">
-            {React.createElement(FiZap as any, { className: "feature-icon" })}
+            <FiZap className="feature-icon" />
             <h3>Instant Analysis</h3>
             <p>Get feedback in under 30 seconds using advanced AI agents</p>
           </div>
 
           <div className="feature-card">
-            {React.createElement(FiUploadCloud as any, { className: "feature-icon" })}
+            <FiUploadCloud className="feature-icon" />
             <h3>Any Format</h3>
             <p>Upload PDFs, images, websites, or any digital content</p>
           </div>
 
           <div className="feature-card">
-            {React.createElement(FiTrendingUp as any, { className: "feature-icon" })}
+            <FiTrendingUp className="feature-icon" />
             <h3>Track Progress</h3>
             <p>Monitor your score evolution throughout the hackathon</p>
           </div>
 
           <div className="feature-card">
-            {React.createElement(FiAward as any, { className: "feature-icon" })}
+            <FiAward className="feature-icon" />
             <h3>Compete Live</h3>
             <p>See real-time leaderboard and compete with other teams</p>
           </div>

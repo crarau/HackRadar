@@ -129,7 +129,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             <span>{user.name}</span>
           </div>
           <button onClick={onLogout} className="logout-btn">
-            {React.createElement(FiLogOut as any, { size: 16 })} Logout
+            <FiLogOut size={16} /> Logout
           </button>
         </div>
       </header>
@@ -154,7 +154,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             className={`dropzone ${isDragActive ? 'active' : ''}`}
           >
             <input {...getInputProps()} />
-            {React.createElement(FiUpload as any, { className: "upload-icon" })}
+            <FiUpload className="upload-icon" />
             <p>Drag & drop files here, or click to select</p>
             <span className="file-types">
               Supports: PDF, Images, DOC, DOCX, TXT, MD
@@ -171,7 +171,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                   animate={{ opacity: 1, x: 0 }}
                   className="file-item"
                 >
-                  {React.createElement(FiFile as any, { className: "file-icon" })}
+                  <FiFile className="file-icon" />
                   <span className="file-name">{file.name}</span>
                   <span className="file-size">
                     {(file.size / 1024 / 1024).toFixed(2)} MB
@@ -180,7 +180,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                     onClick={() => removeFile(index)}
                     className="remove-file"
                   >
-                    {React.createElement(FiX as any)}
+                    <FiX />
                   </button>
                 </motion.div>
               ))}
@@ -194,12 +194,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           >
             {isAnalyzing ? (
               <>
-                {React.createElement(FiRefreshCw as any, { className: "spinning" })}
+                <FiRefreshCw className="spinning" />
                 Analyzing...
               </>
             ) : (
               <>
-                {React.createElement(FiTrendingUp as any)}
+                <FiTrendingUp />
                 Get AI Evaluation
               </>
             )}

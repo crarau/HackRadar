@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiZap, FiUploadCloud, FiTrendingUp, FiAward, FiLogOut, FiUpload, FiFile, FiX, FiRefreshCw, FiEdit2, FiCheck, FiX as FiCancel } from 'react-icons/fi';
+import { FiZap, FiUploadCloud, FiTrendingUp, FiAward, FiLogOut, FiRefreshCw, FiEdit2, FiCheck, FiX as FiCancel, FiLink } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
+import Timeline from './components/Timeline';
+import UpdateForm from './components/UpdateForm';
 import './App.css';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '378200832535-trha0skd6g1mma6dv0rtl6o9fprjh38b.apps.googleusercontent.com';
@@ -31,17 +32,36 @@ interface Evaluation {
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
-  const [showDashboard, setShowDashboard] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
   const [teamName, setTeamName] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
-  const [project, setProject] = useState<any>(null);
-  const [timeline, setTimeline] = useState<any[]>([]);
-  const [updateText, setUpdateText] = useState('');
-  const [isSubmittingUpdate, setIsSubmittingUpdate] = useState(false);
+  const [project, setProject] = useState<{
+    _id: string;
+    teamName: string;
+    email: string;
+    websiteUrl?: string;
+  } | null>(null);
+  const [timeline, setTimeline] = useState<Array<{
+    _id: string;
+    type: string;
+    content?: string;
+    description?: string;
+    createdAt: string;
+    text?: string;
+    url?: string;
+    files?: Array<{
+      name: string;
+      type: string;
+      size: number;
+      data: string;
+      isImage: boolean;
+    }>;
+  }>>([]);
   const [isEditingTeamName, setIsEditingTeamName] = useState(false);
   const [editedTeamName, setEditedTeamName] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [isEditingWebsite, setIsEditingWebsite] = useState(false);
+  const [editedWebsiteUrl, setEditedWebsiteUrl] = useState('');
 
   // Load user and project from localStorage on mount
   React.useEffect(() => {
@@ -50,47 +70,53 @@ export default function Home() {
     if (savedUser) {
       const userData = JSON.parse(savedUser);
       setUser(userData);
-    }
-
-    // Check for saved project
-    const savedProject = localStorage.getItem('hackradar_project');
-    if (savedProject) {
-      const projectData = JSON.parse(savedProject);
-      setProject(projectData);
-      setTeamName(projectData.teamName);
       
-      // Load timeline
-      fetch(`/api/timeline?projectId=${projectData._id}`)
+      // Check for existing projects by email
+      fetch('/api/projects')
         .then(res => res.json())
-        .then(data => setTimeline(data))
-        .catch(err => console.error('Error loading timeline:', err));
+        .then(projects => {
+          const userProject = projects.find((p: { email: string; teamName: string; _id: string; websiteUrl?: string }) => p.email === userData.email);
+          if (userProject) {
+            setProject(userProject);
+            setTeamName(userProject.teamName);
+            setWebsiteUrl(userProject.websiteUrl || '');
+            localStorage.setItem('hackradar_project', JSON.stringify(userProject));
+            
+            // Load timeline
+            fetch(`/api/timeline?projectId=${userProject._id}`)
+              .then(res => res.json())
+              .then(data => setTimeline(data))
+              .catch(err => console.error('Error loading timeline:', err));
+          }
+        })
+        .catch(err => console.error('Error loading projects:', err));
+    } else {
+      // Check for saved project even if no user
+      const savedProject = localStorage.getItem('hackradar_project');
+      if (savedProject) {
+        const projectData = JSON.parse(savedProject);
+        setProject(projectData);
+        setTeamName(projectData.teamName);
+        
+        // Load timeline
+        fetch(`/api/timeline?projectId=${projectData._id}`)
+          .then(res => res.json())
+          .then(data => setTimeline(data))
+          .catch(err => console.error('Error loading timeline:', err));
+      }
     }
   }, []);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    setFiles(prev => [...prev, ...acceptedFiles]);
-    toast.success(`${acceptedFiles.length} file(s) added`);
-  }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'application/pdf': ['.pdf'],
-      'image/*': ['.png', '.jpg', '.jpeg', '.gif'],
-      'application/msword': ['.doc'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-      'text/*': ['.txt', '.md', '.json'],
-    },
-    maxSize: 10485760, // 10MB
-  });
 
-  const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
-    toast.success('File removed');
-  };
 
-  const handleLoginSuccess = async (credentialResponse: any) => {
+  const handleLoginSuccess = async (credentialResponse: { credential?: string }) => {
     try {
+      if (!credentialResponse.credential) {
+        toast.error('No credential received');
+        return;
+      }
+      
       const decoded = JSON.parse(atob(credentialResponse.credential.split('.')[1]));
       const userData: User = {
         email: decoded.email,
@@ -99,7 +125,27 @@ export default function Home() {
       };
       setUser(userData);
       localStorage.setItem('hackradar_user', JSON.stringify(userData));
-      toast.success(`Welcome, ${userData.name}!`);
+      
+      // Check for existing projects by email
+      const res = await fetch('/api/projects');
+      const projects = await res.json();
+      const userProject = projects.find((p: { email: string; teamName: string; _id: string; websiteUrl?: string }) => p.email === userData.email);
+      
+      if (userProject) {
+        setProject(userProject);
+        setTeamName(userProject.teamName);
+        setWebsiteUrl(userProject.websiteUrl || '');
+        localStorage.setItem('hackradar_project', JSON.stringify(userProject));
+        
+        // Load timeline
+        const timelineRes = await fetch(`/api/timeline?projectId=${userProject._id}`);
+        const timelineData = await timelineRes.json();
+        setTimeline(timelineData);
+        
+        toast.success(`Welcome back, ${userData.name}! Found your team: ${userProject.teamName}`);
+      } else {
+        toast.success(`Welcome, ${userData.name}!`);
+      }
     } catch (error) {
       console.error('Login error:', error);
       toast.error('Login failed. Please try again.');
@@ -108,13 +154,10 @@ export default function Home() {
 
   const handleLogout = () => {
     setUser(null);
-    setShowDashboard(false);
     setProject(null);
     setTimeline([]);
-    setFiles([]);
     setTeamName('');
     setEvaluation(null);
-    setUpdateText('');
     localStorage.removeItem('hackradar_user');
     localStorage.removeItem('hackradar_project');
     toast.success('Logged out successfully');
@@ -131,10 +174,11 @@ export default function Home() {
       // Check if project exists
       const getRes = await fetch('/api/projects');
       const projects = await getRes.json();
-      const existing = projects.find((p: any) => p.teamName === teamName);
+      const existing = projects.find((p: { teamName: string; _id: string }) => p.teamName === teamName);
       
       if (existing) {
         setProject(existing);
+        setWebsiteUrl(existing.websiteUrl || '');
         localStorage.setItem('hackradar_project', JSON.stringify(existing));
         // Load timeline
         const timelineRes = await fetch(`/api/timeline?projectId=${existing._id}`);
@@ -165,7 +209,7 @@ export default function Home() {
   };
 
   const handleUpdateTeamName = async () => {
-    if (!editedTeamName.trim() || editedTeamName === project.teamName) {
+    if (!project || !editedTeamName.trim() || editedTeamName === project.teamName) {
       setIsEditingTeamName(false);
       return;
     }
@@ -185,135 +229,38 @@ export default function Home() {
     }
   };
 
-  const handleSubmitUpdate = async () => {
-    if (!updateText.trim()) {
-      toast.error('Please enter an update');
+  const handleUpdateWebsiteUrl = async () => {
+    if (!project || editedWebsiteUrl === websiteUrl) {
+      setIsEditingWebsite(false);
       return;
     }
 
-    if (!project) {
-      toast.error('Please create a team first');
-      return;
-    }
-
-    setIsSubmittingUpdate(true);
     try {
-      const formData = new FormData();
-      formData.append('projectId', project._id);
-      formData.append('type', 'text');
-      formData.append('content', updateText);
-      formData.append('description', updateText);
+      // Update project with website URL
+      const updatedProject = { ...project, websiteUrl: editedWebsiteUrl };
+      setProject(updatedProject);
+      setWebsiteUrl(editedWebsiteUrl);
+      localStorage.setItem('hackradar_project', JSON.stringify(updatedProject));
       
-      await fetch('/api/timeline', {
-        method: 'POST',
-        body: formData
-      });
-
-      // Reload timeline
-      const timelineRes = await fetch(`/api/timeline?projectId=${project._id}`);
-      const timelineData = await timelineRes.json();
-      setTimeline(timelineData);
-      
-      // Get fresh assessment
-      const assessRes = await fetch('/api/assess', {
-        method: 'POST',
+      // Update in database
+      await fetch('/api/projects', {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId: project._id })
+        body: JSON.stringify({ 
+          projectId: project._id,
+          websiteUrl: editedWebsiteUrl 
+        })
       });
-
-      const assessData = await assessRes.json();
-      setEvaluation(assessData.assessment);
       
-      toast.success('Update submitted!');
-      setUpdateText(''); // Clear the input
+      toast.success('Website URL updated!');
+      setIsEditingWebsite(false);
     } catch (error) {
-      console.error('Error submitting update:', error);
-      toast.error('Failed to submit update. Please try again.');
-    } finally {
-      setIsSubmittingUpdate(false);
+      console.error('Error updating website URL:', error);
+      toast.error('Failed to update website URL');
     }
   };
 
-  const handleSubmit = async () => {
-    if (!teamName.trim()) {
-      toast.error('Please enter your team name');
-      return;
-    }
 
-    setIsAnalyzing(true);
-
-    try {
-      let currentProject = project;
-      
-      // Create project if not exists
-      if (!currentProject) {
-        const projectRes = await fetch('/api/projects', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ teamName, email: user?.email || 'test@test.com' })
-        });
-        
-        const projectData = await projectRes.json();
-        if (projectData.error) {
-          // Project exists, try to get it
-          const getRes = await fetch('/api/projects');
-          const projects = await getRes.json();
-          const existing = projects.find((p: any) => p.teamName === teamName);
-          if (existing) {
-            currentProject = existing;
-            setProject(existing);
-          }
-        } else {
-          currentProject = projectData.project;
-          setProject(projectData.project);
-        }
-      }
-
-      // Add timeline entries for files
-      if (currentProject && files.length > 0) {
-        for (const file of files) {
-          const formData = new FormData();
-          formData.append('projectId', currentProject._id);
-          formData.append('type', file.type.startsWith('image/') ? 'image' : 'file');
-          formData.append('file', file);
-          formData.append('description', `Uploaded ${file.name}`);
-          
-          await fetch('/api/timeline', {
-            method: 'POST',
-            body: formData
-          });
-        }
-      }
-
-      // Get timeline entries
-      if (currentProject) {
-        const timelineRes = await fetch(`/api/timeline?projectId=${currentProject._id}`);
-        const timelineData = await timelineRes.json();
-        setTimeline(timelineData);
-      }
-
-      // Get assessment
-      if (currentProject) {
-        const assessRes = await fetch('/api/assess', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectId: currentProject._id })
-        });
-
-        const assessData = await assessRes.json();
-        setEvaluation(assessData.assessment);
-      }
-      
-      toast.success('Analysis complete!');
-      setFiles([]); // Clear files after successful submission
-
-    } catch (error) {
-      console.error('Submission error:', error);
-      toast.error('Failed to submit. Please try again.');
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
@@ -453,7 +400,7 @@ export default function Home() {
                 {!project ? (
                   // Step 1: Ask for team name only
                   <div className="submission-section">
-                    <h2>Create or Join Your Team</h2>
+                    <h2 className="text-2xl font-bold text-cyan-400 mb-6">Create or Join Your Team</h2>
                     
                     <div className="team-input">
                       <label>TEAM NAME</label>
@@ -493,7 +440,7 @@ export default function Home() {
                 ) : (
                   // Step 2: Show update form after team is created
                   <div className="submission-section">
-                    <h2 className="flex items-center gap-4">
+                    <h2 className="flex items-center gap-4 text-2xl font-bold text-white mb-2">
                       {isEditingTeamName ? (
                         <>
                           <input
@@ -522,7 +469,7 @@ export default function Home() {
                         </>
                       ) : (
                         <>
-                          Team: {project.teamName}
+                          <span className="text-white">Team: {project.teamName}</span>
                           <button
                             onClick={() => {
                               setIsEditingTeamName(true);
@@ -535,39 +482,193 @@ export default function Home() {
                         </>
                       )}
                     </h2>
+                    
+                    <div className="mb-6">
+                      <style jsx>{`
+                        .website-url-section {
+                          display: flex;
+                          flex-direction: column;
+                          gap: 0.5rem;
+                        }
+                        
+                        .website-label {
+                          display: flex;
+                          align-items: center;
+                          gap: 0.5rem;
+                          color: #00d4ff;
+                          font-size: 0.9rem;
+                          text-transform: uppercase;
+                          letter-spacing: 1px;
+                        }
+                        
+                        .website-input-wrapper {
+                          position: relative;
+                        }
+                        
+                        .website-input {
+                          width: 100%;
+                          padding: 0.75rem;
+                          padding-right: 3rem;
+                          background: rgba(0, 0, 0, 0.3);
+                          border: 1px solid rgba(0, 212, 255, 0.3);
+                          border-radius: 8px;
+                          color: #ffffff;
+                          font-size: 1rem;
+                          transition: all 0.3s ease;
+                          font-family: inherit;
+                        }
+                        
+                        .website-input:focus {
+                          outline: none;
+                          border-color: #00d4ff;
+                          box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+                        }
+                        
+                        .website-input::placeholder {
+                          color: rgba(255, 255, 255, 0.3);
+                        }
+                        
+                        .edit-button {
+                          position: absolute;
+                          right: 0.75rem;
+                          top: 50%;
+                          transform: translateY(-50%);
+                          background: transparent;
+                          border: none;
+                          color: #00d4ff;
+                          cursor: pointer;
+                          opacity: 0.7;
+                          transition: opacity 0.3s ease;
+                          padding: 0.25rem;
+                        }
+                        
+                        .edit-button:hover {
+                          opacity: 1;
+                        }
+                        
+                        .action-buttons {
+                          position: absolute;
+                          right: 0.75rem;
+                          top: 50%;
+                          transform: translateY(-50%);
+                          display: flex;
+                          gap: 0.5rem;
+                        }
+                        
+                        .action-button {
+                          background: transparent;
+                          border: none;
+                          cursor: pointer;
+                          padding: 0.25rem;
+                          transition: all 0.3s ease;
+                        }
+                        
+                        .save-button {
+                          color: #00ff88;
+                        }
+                        
+                        .cancel-button {
+                          color: #ff6b6b;
+                        }
+                        
+                        .action-button:hover {
+                          transform: scale(1.1);
+                        }
+                      `}</style>
+                      
+                      <div className="website-url-section">
+                        <label className="website-label">
+                          <FiLink className="text-base" />
+                          WEBSITE URL
+                        </label>
+                        
+                        <div className="website-input-wrapper">
+                          {isEditingWebsite ? (
+                            <>
+                              <input
+                                type="url"
+                                value={editedWebsiteUrl}
+                                onChange={(e) => setEditedWebsiteUrl(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleUpdateWebsiteUrl();
+                                  if (e.key === 'Escape') setIsEditingWebsite(false);
+                                }}
+                                className="website-input"
+                                placeholder="https://your-project-website.com"
+                                autoFocus
+                              />
+                              <div className="action-buttons">
+                                <button
+                                  onClick={handleUpdateWebsiteUrl}
+                                  className="action-button save-button"
+                                >
+                                  <FiCheck size={18} />
+                                </button>
+                                <button
+                                  onClick={() => setIsEditingWebsite(false)}
+                                  className="action-button cancel-button"
+                                >
+                                  <FiCancel size={18} />
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <input
+                                type="url"
+                                value={websiteUrl || ''}
+                                className="website-input"
+                                placeholder="Enter your project website URL"
+                                readOnly
+                              />
+                              <button
+                                onClick={() => {
+                                  setIsEditingWebsite(true);
+                                  setEditedWebsiteUrl(websiteUrl || '');
+                                }}
+                                className="edit-button"
+                              >
+                                <FiEdit2 size={18} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
                     <div className="mb-8 text-cyan-400 text-sm">
                       Project ID: {project._id}
                     </div>
                     
-                    <div className="team-input">
-                      <label>SUBMIT AN UPDATE</label>
-                      <textarea
-                        value={updateText}
-                        onChange={(e) => setUpdateText(e.target.value)}
-                        className="team-name-input"
-                        placeholder="Enter your update (e.g., 'Just finished implementing the login system')"
-                        className="min-h-[120px] resize-y font-inherit"
-                        autoFocus
-                      />
-                    </div>
+                    <UpdateForm 
+                      projectId={project._id}
+                      websiteUrl={websiteUrl}
+                      onSubmit={async (formData) => {
+                        const response = await fetch('/api/timeline', {
+                          method: 'POST',
+                          body: formData
+                        });
+                        
+                        if (response.ok) {
+                          // Reload timeline
+                          const timelineRes = await fetch(`/api/timeline?projectId=${project._id}`);
+                          const timelineData = await timelineRes.json();
+                          setTimeline(timelineData);
+                          
+                          // Get fresh assessment
+                          const assessRes = await fetch('/api/assess', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ projectId: project._id })
+                          });
 
-                    <button
-                      onClick={handleSubmitUpdate}
-                      disabled={isSubmittingUpdate || !updateText.trim()}
-                      className="submit-btn"
-                    >
-                      {isSubmittingUpdate ? (
-                        <>
-                          <FiRefreshCw className="spinning" />
-                          Submitting Update...
-                        </>
-                      ) : (
-                        <>
-                          <FiUpload />
-                          Submit Update
-                        </>
-                      )}
-                    </button>
+                          const assessData = await assessRes.json();
+                          setEvaluation(assessData.assessment);
+                        } else {
+                          throw new Error('Failed to submit');
+                        }
+                      }}
+                    />
                   </div>
                 )}
 
@@ -575,33 +676,8 @@ export default function Home() {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="submission-section"
-                    className="mt-8"
                   >
-                    <h2>Project Timeline</h2>
-                    <div className="mb-4 text-cyan-400">
-                      <strong>Team:</strong> {project.teamName}
-                    </div>
-                    <div className="flex flex-col gap-4">
-                      {timeline.map((entry: any, index: number) => (
-                        <div 
-                          key={entry._id} 
-                          className="p-4 bg-black/30 border border-cyan-400/30 rounded-lg flex items-center gap-4"
-                        >
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-green-400 flex items-center justify-center font-bold text-slate-900">
-                            {index + 1}
-                          </div>
-                          <div className="flex-1">
-                            <div className="text-cyan-400 text-sm mb-1">
-                              {new Date(entry.createdAt).toLocaleString()}
-                            </div>
-                            <div className="text-white">
-                              {entry.description || entry.content || `${entry.type} submission`}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <Timeline entries={timeline} teamName={project.teamName} />
                   </motion.div>
                 )}
 
@@ -611,7 +687,7 @@ export default function Home() {
                     animate={{ opacity: 1, y: 0 }}
                     className="submission-section"
                   >
-                    <h2>AI Evaluation Results</h2>
+                    <h2 className="text-2xl font-bold text-cyan-400 mb-6">AI Evaluation Results</h2>
                     
                     <div className="text-center mb-8">
                       <div className="text-6xl font-bold text-cyan-400">
