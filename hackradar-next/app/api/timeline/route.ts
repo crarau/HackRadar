@@ -187,6 +187,10 @@ export async function POST(request: NextRequest) {
       debugLogs = logger.getLogs();
       
       // Add metadata to the entry we just created
+      console.log('\n💾 [Timeline API] Updating timeline entry with metadata:');
+      console.log('  Entry ID:', result.insertedId);
+      console.log('  Metadata final_score:', evaluation.metadata.evaluation.final_score);
+      
       await db.collection('timeline').updateOne(
         { _id: result.insertedId },
         { 
@@ -197,20 +201,37 @@ export async function POST(request: NextRequest) {
         }
       );
       
+      console.log('✅ [Timeline API] Timeline entry updated with scores');
+      
       // Don't create separate score update entries anymore
       // The score is already attached to the main submission entry via metadata
       
       // Update project's updatedAt and current score
+      console.log('\n💾 [Timeline API] Updating project with new scores:');
+      console.log('  Project ID:', projectId);
+      console.log('  New currentScore:', evaluation.scores.final_score);
+      console.log('  Should match metadata score:', evaluation.metadata.evaluation.final_score);
+      
       await db.collection('projects').updateOne(
         { _id: new ObjectId(projectId) },
         { 
           $set: { 
             updatedAt: new Date(),
             currentScore: evaluation.scores.final_score,
-            lastEvaluation: evaluation.metadata.evaluation
+            lastEvaluation: evaluation.metadata.evaluation,
+            categoryScores: {
+              clarity: evaluation.scores.clarity,
+              problem_value: evaluation.scores.problem_value,
+              feasibility: evaluation.scores.feasibility,
+              originality: evaluation.scores.originality,
+              impact_convert: evaluation.scores.impact_convert,
+              submission_readiness: evaluation.scores.submission_readiness
+            }
           } 
         }
       );
+      
+      console.log('✅ [Timeline API] Project scores updated successfully');
       
     } catch (evalError) {
       console.error('Evaluation error (non-blocking):', evalError);
@@ -224,6 +245,12 @@ export async function POST(request: NextRequest) {
       evaluation: evaluationResult,
       debugLogs: process.env.NODE_ENV === 'development' ? debugLogs : undefined
     };
+    
+    console.log('\n📤 [Timeline API] Sending response with scores:');
+    if (evaluationResult) {
+      console.log('  Final score in response:', evaluationResult.scores.final_score);
+      console.log('  Metadata score in response:', evaluationResult.metadata.evaluation.final_score);
+    }
     
     return NextResponse.json(response);
     

@@ -129,17 +129,45 @@ Be strict with scoring. Most pitches should score 40-60 total.`;
 
     try {
       const response = await this.callAnthropic(prompt, messageHistory);
-      const result = this.parseJSON<TextEvaluatorResult>(response, {
-        subscores: {
-          clarity: 5,
-          problem_value: 5,
-          feasibility_signal: 3,
-          originality: 3,
-          impact_convert: 5
-        },
-        evidence: ['Text submitted'],
-        gaps: ['Could not parse AI response']
-      });
+      
+      console.log('\n📜 [TextEvaluator] Raw AI Response:');
+      console.log(response);
+      
+      let result: TextEvaluatorResult;
+      try {
+        const parsed = JSON.parse(response);
+        console.log('📊 [TextEvaluator] Parsed JSON:', parsed);
+        
+        result = {
+          subscores: {
+            clarity: parsed.subscores?.clarity || 0,
+            problem_value: parsed.subscores?.problem_value || 0,
+            feasibility_signal: parsed.subscores?.feasibility_signal || 0,
+            originality: parsed.subscores?.originality || 0,
+            impact_convert: parsed.subscores?.impact_convert || 0
+          },
+          evidence: parsed.evidence || [],
+          gaps: parsed.gaps || []
+        };
+        
+        console.log('✅ [TextEvaluator] Successfully extracted scores:', result.subscores);
+      } catch (parseError) {
+        console.error('⚠️ [TextEvaluator] JSON parse error:', parseError);
+        console.log('Response that failed to parse:', response);
+        
+        // Fallback - use default scores
+        result = {
+          subscores: {
+            clarity: 5,
+            problem_value: 5,
+            feasibility_signal: 3,
+            originality: 3,
+            impact_convert: 5
+          },
+          evidence: ['Text submitted'],
+          gaps: ['Could not parse AI response']
+        };
+      }
 
       // Enforce maximums
       if (result.subscores) {

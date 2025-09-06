@@ -865,10 +865,28 @@ export default function Home() {
                         if (response.ok) {
                           const responseData = await response.json();
                           
+                          console.log('\n📥 [UI] Response from timeline API:', responseData);
+                          if (responseData.evaluation) {
+                            console.log('  🎯 Evaluation scores received:', responseData.evaluation.scores);
+                            console.log('  🎯 Final score:', responseData.evaluation.scores.final_score);
+                          }
+                          
                           // Reload timeline
+                          console.log('\n🔄 [UI] Reloading timeline...');
                           const timelineRes = await fetch(`/api/timeline?projectId=${project._id}`);
                           const timelineData = await timelineRes.json();
+                          
+                          console.log('\n📋 [UI] New timeline data:', timelineData);
+                          if (timelineData.length > 0) {
+                            const latestEntry = timelineData[0];
+                            console.log('  🗺 Latest entry metadata:', latestEntry.metadata);
+                            if (latestEntry.metadata?.evaluation) {
+                              console.log('  🎯 Latest entry final_score:', latestEntry.metadata.evaluation.final_score);
+                            }
+                          }
+                          
                           setTimeline(timelineData);
+                          console.log('✅ [UI] Timeline state updated');
                           
                           // Get fresh assessment (optional - evaluation is already in timeline)
                           try {

@@ -164,10 +164,16 @@ export class EvaluationService {
     const srEvalResult = srEval;
     
     // Aggregate scores
+    console.log('\n🔄 [EvaluationService] About to aggregate scores:');
+    console.log('TextEval result:', textEvalResult);
+    console.log('SRTracker result:', srEvalResult);
+    
     const scores = this.aggregateScores(
       textEvalResult,
       srEvalResult
     );
+    
+    console.log('\n⚙️ [EvaluationService] Aggregated final scores:', scores);
     
     // Calculate delta from previous submission
     let delta: EvaluationDelta | null = null;
@@ -205,7 +211,7 @@ export class EvaluationService {
     // Update project with latest evaluation and detailed scores
     console.log(`\n💾 [EvaluationService] Saving to database:`);
     console.log(`  Project ID: ${projectId}`);
-    console.log(`  Final Score: ${scores.final_score}`);
+    console.log(`  Final Score: ${scores.final_score} (should match UI)`);
     console.log(`  Category Scores:`, {
       clarity: scores.clarity,
       problem_value: scores.problem_value,
@@ -214,6 +220,7 @@ export class EvaluationService {
       impact_convert: scores.impact_convert,
       submission_readiness: scores.submission_readiness
     });
+    console.log(`  Metadata final_score: ${metadata.evaluation.final_score}`);
     
     await this.db.collection('projects').updateOne(
       { _id: new ObjectId(projectId) },
@@ -236,6 +243,8 @@ export class EvaluationService {
         }
       }
     );
+    
+    console.log('💾 [EvaluationService] Database update completed');
 
     const result = {
       scores,
@@ -248,6 +257,11 @@ export class EvaluationService {
         notes: srEvalResult.notes || []
       }
     };
+    
+    // Verify the update worked by logging what we're returning
+    console.log('\n📤 [EvaluationService] Returning result with scores:');
+    console.log('Final score being returned:', result.scores.final_score);
+    console.log('Metadata final score:', result.metadata.evaluation.final_score);
     
     console.log('\n' + '🎉'.repeat(40));
     console.log('🏆 [EvaluationService] EVALUATION COMPLETE');
