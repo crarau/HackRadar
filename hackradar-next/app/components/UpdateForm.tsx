@@ -109,6 +109,15 @@ export default function UpdateForm({ projectId, websiteUrl, onSubmit }: UpdateFo
       
       const result = await onSubmit(formData);
       
+      // Log debug information if available
+      const fullResult = result as { debugLogs?: string[]; evaluation?: unknown };
+      if (fullResult?.debugLogs && Array.isArray(fullResult.debugLogs)) {
+        console.log('\n🔍 EVALUATION DEBUG LOGS:');
+        console.log('='.repeat(80));
+        fullResult.debugLogs.forEach((log: string) => console.log(log));
+        console.log('='.repeat(80) + '\n');
+      }
+      
       // Clear form after successful submission
       setUpdateText('');
       setFiles([]);

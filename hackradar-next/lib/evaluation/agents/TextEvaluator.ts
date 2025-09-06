@@ -30,7 +30,17 @@ export class TextEvaluator extends BaseAgent {
   async evaluate(input: TextEvaluatorInput): Promise<TextEvaluatorResult> {
     const { text, mode = 'initial' } = input;
     
+    console.log('\n📝 [TextEvaluator] Starting evaluation...');
+    console.log(`Mode: ${mode}`);
+    console.log(`Text length: ${text?.length || 0} characters`);
+    if (text && text.length < 500) {
+      console.log(`Text preview: "${text}"`);
+    } else if (text) {
+      console.log(`Text preview: "${text.substring(0, 200)}..."`);
+    }
+    
     if (!text || text.trim().length < 10) {
+      console.log('⚠️ Text too short, returning minimum scores');
       return {
         subscores: {
           clarity: 0,
@@ -95,6 +105,12 @@ Be strict with scoring. Most pitches should score 40-60 total.`;
         result.subscores.originality = Math.min(10, result.subscores.originality || 0);
         result.subscores.impact_convert = Math.min(20, result.subscores.impact_convert || 0);
       }
+
+      console.log('\n✅ [TextEvaluator] Evaluation complete:');
+      console.log('  Scores:', result.subscores);
+      console.log('  Total:', Object.values(result.subscores).reduce((a, b) => (a || 0) + (b || 0), 0));
+      console.log('  Evidence:', result.evidence?.length || 0, 'items');
+      console.log('  Gaps:', result.gaps?.length || 0, 'items');
 
       return result;
     } catch (error) {

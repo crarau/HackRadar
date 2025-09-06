@@ -748,6 +748,8 @@ export default function Home() {
                         });
                         
                         if (response.ok) {
+                          const responseData = await response.json();
+                          
                           // Reload timeline
                           const timelineRes = await fetch(`/api/timeline?projectId=${project._id}`);
                           const timelineData = await timelineRes.json();
@@ -762,6 +764,9 @@ export default function Home() {
 
                           const assessData = await assessRes.json();
                           setEvaluation(assessData.assessment);
+                          
+                          // Return the response data (including debugLogs if present)
+                          return responseData;
                         } else {
                           throw new Error('Failed to submit');
                         }

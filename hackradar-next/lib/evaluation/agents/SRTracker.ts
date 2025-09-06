@@ -63,6 +63,14 @@ export class SRTracker extends BaseAgent {
     const questions: string[] = [];
     const notes: string[] = [];
 
+    console.log('\n📋 [SRTracker] Starting submission readiness tracking...');
+    console.log(`User message: ${userMessage ? `"${userMessage.substring(0, 100)}..."` : 'None'}`);
+    console.log(`Files: ${currentSnapshot?.files?.length || 0} files`);
+    if (currentSnapshot?.files) {
+      currentSnapshot.files.forEach(f => console.log(`  - ${f.name} (${f.type})`));
+    }
+    console.log(`URL provided: ${currentSnapshot?.url ? 'Yes' : 'No'}`);
+
     // Analyze files if present
     if (currentSnapshot?.files) {
       this.analyzeFiles(currentSnapshot.files, checklist, notes);
@@ -85,8 +93,11 @@ export class SRTracker extends BaseAgent {
     // Calculate readiness score
     const submissionReadinessScore = this.calculateReadinessScore(checklist);
 
-    this.log(`Readiness score: ${submissionReadinessScore}/15`);
-    this.log(`Missing items: ${missingItems.join(', ') || 'None'}`);
+    console.log(`\n✅ [SRTracker] Evaluation complete:`);
+    console.log(`  Readiness score: ${submissionReadinessScore}/15`);
+    console.log(`  Missing items: ${missingItems.join(', ') || 'None'}`);
+    console.log(`  Questions generated: ${questions.length}`);
+    console.log(`  Notes: ${notes.length > 0 ? notes.join('; ') : 'None'}`);
 
     return {
       checklist_update: checklist,

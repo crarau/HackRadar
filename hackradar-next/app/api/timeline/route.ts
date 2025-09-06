@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { EvaluationService } from '@/lib/evaluation/EvaluationService';
+import { getDebugLogger, resetDebugLogger } from '@/lib/evaluation/DebugLogger';
 
 // POST add entry to timeline
 export async function POST(request: NextRequest) {
@@ -161,8 +162,13 @@ export async function POST(request: NextRequest) {
     
     // Trigger evaluation for this submission
     let evaluationResult = null;
+    let debugLogs: string[] = [];
     
     try {
+      // Reset debug logger for this request
+      resetDebugLogger();
+      const logger = getDebugLogger();
+      
       const evaluationService = new EvaluationService(db);
       const evaluation = await evaluationService.evaluateSubmission(projectId, {
         text,
@@ -176,6 +182,9 @@ export async function POST(request: NextRequest) {
       });
       
       evaluationResult = evaluation;
+      
+      // Capture debug logs
+      debugLogs = logger.getLogs();
       
       // Add metadata to the entry we just created
       await db.collection('timeline').updateOne(
@@ -208,12 +217,15 @@ export async function POST(request: NextRequest) {
       // Continue even if evaluation fails
     }
     
-    return NextResponse.json({
+    const response = {
       success: true,
       entryId: result.insertedId,
       entry: { ...entry, _id: result.insertedId, metadata: evaluationResult?.metadata },
-      evaluation: evaluationResult
-    });
+      evaluation: evaluationResult,
+      debugLogs: process.env.NODE_ENV === 'development' ? debugLogs : undefined
+    };
+    
+    return NextResponse.json(response);
     
   } catch (error) {
     console.error('Error adding timeline entry:', error);

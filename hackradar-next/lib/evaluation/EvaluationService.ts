@@ -72,6 +72,15 @@ export class EvaluationService {
   }> {
     const { text, files, url, userMessage } = submission;
     
+    console.log('\n' + '🚀'.repeat(40));
+    console.log('🎯 [EvaluationService] STARTING NEW EVALUATION');
+    console.log('🚀'.repeat(40));
+    console.log(`Project ID: ${projectId}`);
+    console.log(`Has text: ${text ? `Yes (${text.length} chars)` : 'No'}`);
+    console.log(`Has files: ${files ? `Yes (${files.length} files)` : 'No'}`);
+    console.log(`Has URL: ${url ? 'Yes' : 'No'}`);
+    console.log('🚀'.repeat(40) + '\n');
+    
     // Get current progress state from database
     const project = await this.db.collection('projects').findOne({ 
       _id: new ObjectId(projectId) 
@@ -104,9 +113,11 @@ export class EvaluationService {
     // Add processing delay to simulate agent thinking (2-4 seconds)
     if (addDelay) {
       const delayMs = 2000 + Math.random() * 2000; // 2-4 seconds
+      console.log(`⏳ Simulating processing delay: ${Math.round(delayMs)}ms`);
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
     
+    console.log('\n🔄 Running evaluations in parallel...');
     // Run evaluations in parallel
     const [textEval, srEval] = await Promise.all([
       this.textEvaluator.evaluate({
@@ -180,7 +191,7 @@ export class EvaluationService {
       }
     );
 
-    return {
+    const result = {
       scores,
       delta,
       metadata,
@@ -191,6 +202,24 @@ export class EvaluationService {
         notes: srEvalResult.notes || []
       }
     };
+    
+    console.log('\n' + '🎉'.repeat(40));
+    console.log('🏆 [EvaluationService] EVALUATION COMPLETE');
+    console.log('🎉'.repeat(40));
+    console.log(`Final Score: ${scores.final_score}/100`);
+    console.log(`Score Breakdown:`);
+    console.log(`  - Clarity: ${scores.clarity}/15`);
+    console.log(`  - Problem Value: ${scores.problem_value}/20`);
+    console.log(`  - Feasibility: ${scores.feasibility}/15`);
+    console.log(`  - Originality: ${scores.originality}/15`);
+    console.log(`  - Impact: ${scores.impact_convert}/20`);
+    console.log(`  - Readiness: ${scores.submission_readiness}/15`);
+    if (delta) {
+      console.log(`\nDelta from previous: ${delta.direction === 'up' ? '📈' : delta.direction === 'down' ? '📉' : '➡️'} ${delta.total_change > 0 ? '+' : ''}${delta.total_change} points`);
+    }
+    console.log('🎉'.repeat(40) + '\n');
+    
+    return result;
   }
 
   private aggregateScores(textEval: TextEvaluatorResult, srEval: SRTrackerResult): EvaluationScores {

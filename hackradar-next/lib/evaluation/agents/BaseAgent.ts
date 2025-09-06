@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { getDebugLogger } from '../DebugLogger';
 
 export interface EvaluationScores {
   clarity: number;
@@ -25,14 +26,24 @@ export class BaseAgent {
     this.anthropic = new Anthropic({ apiKey });
   }
 
-  protected log(message: string): void {
-    if (process.env.NODE_ENV === 'development') {
+  protected log(message: string, data?: unknown): void {
+    if (process.env.NODE_ENV === 'development' || process.env.DEBUG_ANTHROPIC === 'true') {
       console.log(`[${this.name}] ${message}`);
+      if (data) {
+        console.log(JSON.stringify(data, null, 2));
+      }
     }
   }
 
   protected async callAnthropic(prompt: string): Promise<string> {
+    const logger = getDebugLogger();
+    
     try {
+      // Log the prompt being sent
+      logger.logPrompt(this.name, prompt);
+      
+      const startTime = Date.now();
+      
       const response = await this.anthropic.messages.create({
         model: 'claude-3-haiku-20240307', // Fast and cheap for evaluations
         max_tokens: 1000,
@@ -44,23 +55,30 @@ export class BaseAgent {
         ]
       });
 
+      const duration = Date.now() - startTime;
+      
       const content = response.content[0];
       if (content.type === 'text') {
+        // Log the response received
+        logger.logResponse(this.name, content.text, duration);
         return content.text;
       }
       
       throw new Error('Invalid response from Anthropic');
     } catch (error) {
-      this.log(`Anthropic API error: ${error}`);
+      logger.log(`❌ [${this.name}] ANTHROPIC API ERROR: ${error}`);
       throw error;
     }
   }
 
   protected parseJSON<T>(response: string, fallback: T): T {
     try {
-      return JSON.parse(response) as T;
-    } catch {
-      this.log('Failed to parse JSON response, using fallback');
+      const parsed = JSON.parse(response) as T;
+      console.log(`✅ [${this.name}] Successfully parsed JSON response`);
+      return parsed;
+    } catch (error) {
+      console.error(`⚠️ [${this.name}] Failed to parse JSON response:`, error);
+      console.log('Using fallback:', fallback);
       return fallback;
     }
   }
