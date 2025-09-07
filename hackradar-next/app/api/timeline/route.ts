@@ -6,7 +6,9 @@ import { getDebugLogger, resetDebugLogger } from '@/lib/evaluation/DebugLogger';
 
 // POST add entry to timeline
 export async function POST(request: NextRequest) {
+  console.log('\n🌟 [Timeline API] POST request received');
   try {
+    console.log('📦 [Timeline API] Getting database connection...');
     const db = await getDatabase();
     const formData = await request.formData();
     
@@ -165,11 +167,24 @@ export async function POST(request: NextRequest) {
     let debugLogs: string[] = [];
     
     try {
+      console.log('\n🚀 [Timeline API] Starting evaluation process...');
+      console.log('  Project ID:', projectId);
+      console.log('  Text:', text?.substring(0, 100) || 'No text');
+      console.log('  Files:', files.length);
+      
       // Reset debug logger for this request
       resetDebugLogger();
       const logger = getDebugLogger();
       
+      console.log('📊 [Timeline API] Creating EvaluationService...');
       const evaluationService = new EvaluationService(db);
+      
+      console.log('📊 [Timeline API] Calling evaluateSubmission...');
+      console.log('  Submission data:');
+      console.log('    Text length:', text?.length || 0);
+      console.log('    Files count:', files.length);
+      console.log('    URL:', url || 'none');
+      
       const evaluation = await evaluationService.evaluateSubmission(projectId, {
         text,
         files: files.map(f => ({
@@ -181,75 +196,102 @@ export async function POST(request: NextRequest) {
         userMessage: text // Using text as user message for now
       });
       
+      console.log('✅ [Timeline API] Evaluation completed successfully');
+      console.log('  Final score:', evaluation?.scores?.final_score || 'none');
+      console.log('  Text eval result:', !!evaluation?.textEval);
+      console.log('  SR tracker result:', !!evaluation?.sr_tracker);
+      console.log('  Conversation ID:', evaluation?.textEval?.conversationId || 'none');
+      
       evaluationResult = evaluation;
       
       // Capture debug logs
       debugLogs = logger.getLogs();
       
-      // Add metadata to the entry we just created
-      console.log('\n💾 [Timeline API] Updating timeline entry with metadata:');
+      // Store evaluation directly on timeline entry in simple format
+      const evaluationData = {
+        scores: {
+          clarity: evaluation.scores.clarity,
+          problem_value: evaluation.scores.problem_value,
+          feasibility_signal: evaluation.scores.feasibility, // Map feasibility to feasibility_signal
+          originality: evaluation.scores.originality,
+          impact_convert: evaluation.scores.impact_convert,
+          submission_readiness: evaluation.scores.submission_readiness, // MISSING - add submission readiness
+          final_score: evaluation.scores.final_score
+        },
+        evidence: evaluation.textEval?.evidence || [],
+        gaps: evaluation.textEval?.gaps || [],
+        raw_ai_response: evaluation.textEval?.raw_response || '',
+        evaluated_at: new Date()
+      };
+      
+      console.log('\n💾 [Timeline API] Storing evaluation on timeline entry:');
       console.log('  Entry ID:', result.insertedId);
-      console.log('  Metadata final_score:', evaluation.metadata.evaluation.final_score);
+      console.log('  Final Score:', evaluationData.scores.final_score);
+      console.log('  Individual Scores:', JSON.stringify(evaluationData.scores, null, 2));
       
       await db.collection('timeline').updateOne(
         { _id: result.insertedId },
         { 
           $set: { 
-            metadata: evaluation.metadata,
-            evaluationComplete: true 
+            evaluation: evaluationData,
+            anthropic_conversation_id: evaluation.textEval?.conversationId
           } 
         }
       );
       
-      console.log('✅ [Timeline API] Timeline entry updated with scores');
+      console.log('✅ [Timeline API] Timeline entry updated with evaluation data');
       
-      // Don't create separate score update entries anymore
-      // The score is already attached to the main submission entry via metadata
-      
-      // Update project's updatedAt and current score
-      console.log('\n💾 [Timeline API] Updating project with new scores:');
-      console.log('  Project ID:', projectId);
-      console.log('  New currentScore:', evaluation.scores.final_score);
-      console.log('  Should match metadata score:', evaluation.metadata.evaluation.final_score);
-      
-      await db.collection('projects').updateOne(
-        { _id: new ObjectId(projectId) },
-        { 
-          $set: { 
-            updatedAt: new Date(),
-            currentScore: evaluation.scores.final_score,
-            lastEvaluation: evaluation.metadata.evaluation,
-            categoryScores: {
-              clarity: evaluation.scores.clarity,
-              problem_value: evaluation.scores.problem_value,
-              feasibility: evaluation.scores.feasibility,
-              originality: evaluation.scores.originality,
-              impact_convert: evaluation.scores.impact_convert,
-              submission_readiness: evaluation.scores.submission_readiness
-            }
-          } 
-        }
-      );
-      
-      console.log('✅ [Timeline API] Project scores updated successfully');
+      // Update project with latest score (only if evaluation succeeded)
+      if (evaluation.scores?.final_score !== undefined) {
+        await db.collection('projects').updateOne(
+          { _id: new ObjectId(projectId) },
+          { 
+            $set: { 
+              updatedAt: new Date(),
+              currentScore: evaluation.scores.final_score,
+              categoryScores: {
+                clarity: evaluation.scores.clarity,
+                problem_value: evaluation.scores.problem_value,
+                feasibility: evaluation.scores.feasibility,
+                originality: evaluation.scores.originality,
+                impact_convert: evaluation.scores.impact_convert,
+                submission_readiness: evaluation.scores.submission_readiness
+              }
+            } 
+          }
+        );
+        
+        console.log('✅ [Timeline API] Project scores updated successfully');
+      } else {
+        console.log('⚠️ [Timeline API] Skipping project update - no valid scores');
+      }
       
     } catch (evalError) {
-      console.error('Evaluation error (non-blocking):', evalError);
-      // Continue even if evaluation fails
+      console.error('\n❌ [Timeline API] EVALUATION FAILED:');
+      console.error('Project ID:', projectId);
+      console.error('Text length:', text?.length || 0);
+      console.error('Error message:', (evalError as Error)?.message || 'Unknown error');
+      console.error('Error stack:', (evalError as Error)?.stack || 'No stack trace');
+      console.error('Error type:', typeof evalError);
+      console.error('Error name:', (evalError as Error)?.name || 'Unknown');
+      console.error('Full error object:', JSON.stringify(evalError, null, 2));
+      // Continue even if evaluation fails - but with detailed logging
     }
     
     const response = {
       success: true,
       entryId: result.insertedId,
-      entry: { ...entry, _id: result.insertedId, metadata: evaluationResult?.metadata },
+      entry: { ...entry, _id: result.insertedId },
       evaluation: evaluationResult,
       debugLogs: process.env.NODE_ENV === 'development' ? debugLogs : undefined
     };
     
     console.log('\n📤 [Timeline API] Sending response with scores:');
     if (evaluationResult) {
-      console.log('  Final score in response:', evaluationResult.scores.final_score);
-      console.log('  Metadata score in response:', evaluationResult.metadata.evaluation.final_score);
+      console.log('  Final score in response:', evaluationResult.scores?.final_score || 'N/A');
+      console.log('  TextEval scores:', evaluationResult.textEval?.subscores || 'N/A');
+    } else {
+      console.log('  No evaluation result (evaluation failed)');
     }
     
     return NextResponse.json(response);

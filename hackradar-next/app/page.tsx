@@ -56,30 +56,19 @@ export default function Home() {
       data: string;
       isImage: boolean;
     }>;
-    metadata?: {
-      type?: string;
-      submission_number?: number;
-      score?: number;
-      delta?: {
-        total_change: number;
-        percent_change: number;
-        direction: 'up' | 'down' | 'stable';
-      };
-      readiness_score?: number;
-      evaluation?: {
+    evaluation?: {
+      scores: {
         clarity: number;
         problem_value: number;
-        feasibility: number;
+        feasibility_signal: number;
         originality: number;
-        impact: number;
-        submission_readiness: number;
+        impact_convert: number;
         final_score: number;
-        feedback?: {
-          strengths: string[];
-          weaknesses: string[];
-          recommendations: string[];
-        };
       };
+      evidence: string[];
+      gaps: string[];
+      raw_ai_response?: string;
+      evaluated_at: string;
     };
   }>>([]);
   const [isEditingTeamName, setIsEditingTeamName] = useState(false);
@@ -588,11 +577,11 @@ export default function Home() {
                       // Find the latest entry with a score
                       const latestWithScore = [...timeline]
                         .reverse()
-                        .find(entry => entry.metadata?.evaluation?.final_score !== undefined);
+                        .find(entry => entry.evaluation?.scores?.final_score !== undefined);
                       
-                      if (latestWithScore?.metadata?.evaluation) {
-                        const evaluation = latestWithScore.metadata.evaluation;
-                        const delta = latestWithScore.metadata.delta;
+                      if (latestWithScore?.evaluation?.scores) {
+                        const scores = latestWithScore.evaluation.scores;
+                        // Delta is not stored in new structure - can be calculated if needed
                         
                         return (
                           <div className="score-display mb-6" style={{
@@ -611,17 +600,8 @@ export default function Home() {
                                 WebkitTextFillColor: 'transparent',
                                 marginBottom: '0.5rem'
                               }}>
-                                {evaluation.final_score}/100
+                                {scores.final_score}/100
                               </div>
-                              {delta && delta.total_change !== 0 && (
-                                <div style={{
-                                  fontSize: '1.2rem',
-                                  color: delta.direction === 'up' ? '#00ff88' : '#ff6b6b'
-                                }}>
-                                  {delta.direction === 'up' ? '📈' : '📉'} 
-                                  {delta.total_change > 0 ? '+' : ''}{delta.total_change} points
-                                </div>
-                              )}
                               <div style={{ 
                                 marginTop: '1rem',
                                 display: 'grid',
@@ -632,37 +612,38 @@ export default function Home() {
                                 <div>
                                   <div style={{ color: '#666' }}>Clarity</div>
                                   <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
-                                    {evaluation.clarity || 0}/15
+                                    {scores.clarity}/15
                                   </div>
                                 </div>
                                 <div>
                                   <div style={{ color: '#666' }}>Problem</div>
                                   <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
-                                    {evaluation.problem_value || 0}/20
+                                    {scores.problem_value}/20
                                   </div>
                                 </div>
                                 <div>
                                   <div style={{ color: '#666' }}>Feasibility</div>
                                   <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
-                                    {evaluation.feasibility || 0}/15
+                                    {scores.feasibility_signal}/10
                                   </div>
                                 </div>
                                 <div>
                                   <div style={{ color: '#666' }}>Originality</div>
                                   <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
-                                    {evaluation.originality || 0}/15
+                                    {scores.originality}/10
                                   </div>
                                 </div>
                                 <div>
                                   <div style={{ color: '#666' }}>Impact</div>
                                   <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
-                                    {evaluation.impact || 0}/20
+                                    {scores.impact_convert}/20
                                   </div>
                                 </div>
                                 <div>
                                   <div style={{ color: '#666' }}>Readiness</div>
                                   <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
-                                    {evaluation.submission_readiness || 0}/15
+                                    {/* Readiness is calculated separately - use 0 for now */}
+                                    0/15
                                   </div>
                                 </div>
                               </div>

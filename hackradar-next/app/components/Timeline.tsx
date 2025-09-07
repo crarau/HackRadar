@@ -15,33 +15,20 @@ interface TimelineEntry {
     data: string;
     isImage: boolean;
   }>;
-  metadata?: {
-    type?: string;
-    submission_number?: number;
-    score?: number;
-    delta?: {
-      total_change: number;
-      percent_change: number;
-      direction: 'up' | 'down' | 'stable';
-    };
-    readiness_score?: number;
-    evaluation?: {
+  evaluation?: {
+    scores: {
       clarity: number;
       problem_value: number;
-      feasibility: number;
+      feasibility_signal: number;
       originality: number;
-      impact: number;
-      submission_readiness: number;
+      impact_convert: number;
       final_score: number;
-      feedback?: {
-        strengths: string[];
-        weaknesses: string[];
-        recommendations: string[];
-      };
-      changes?: Record<string, string>;
     };
+    evidence: string[];
+    gaps: string[];
+    raw_ai_response?: string;
+    evaluated_at: string;
   };
-  evaluationComplete?: boolean;
 }
 
 interface TimelineProps {
@@ -58,29 +45,23 @@ export default function Timeline({ entries, teamName }: TimelineProps) {
       </div>
       <div className="timeline-entries">
         {entries.map((entry, index) => {
-          const isScoreUpdate = entry.metadata?.type === 'score_update';
-          const hasScore = entry.metadata?.evaluation?.final_score !== undefined;
+          const hasScore = entry.evaluation?.scores?.final_score !== undefined;
+          const isLast = index === entries.length - 1;
           
           return (
-            <div key={entry._id} className={`timeline-item ${isScoreUpdate ? 'score-update' : ''}`}>
+            <div key={entry._id} className={`timeline-item ${hasScore ? 'has-evaluation' : ''}`}>
               <div className="timeline-number">
-                {isScoreUpdate ? '📊' : index + 1}
+                {entries.length - index}
               </div>
+              {!isLast && <div className="timeline-connector" />}
               <div className="timeline-content">
                 <div className="timeline-header">
                   <div className="timeline-date">
                     {new Date(entry.createdAt).toLocaleString()}
                   </div>
-                  {hasScore && !isScoreUpdate && (
+                  {hasScore && (
                     <div className="timeline-score">
-                      <span className="score-value">{entry.metadata?.evaluation?.final_score}/100</span>
-                      {entry.metadata?.delta && entry.metadata.delta.total_change !== 0 && (
-                        <span className={`score-delta ${entry.metadata.delta.direction}`}>
-                          {entry.metadata.delta.direction === 'up' ? '📈' : '📉'}
-                          {entry.metadata.delta.total_change > 0 ? '+' : ''}
-                          {entry.metadata.delta.total_change}
-                        </span>
-                      )}
+                      <span className="score-value">{entry.evaluation?.scores?.final_score}/100</span>
                     </div>
                   )}
                 </div>
@@ -167,28 +148,71 @@ export default function Timeline({ entries, teamName }: TimelineProps) {
               )}
               
               {/* Display evaluation feedback if available */}
-              {entry.metadata?.evaluation?.feedback && !isScoreUpdate && (
+              {entry.evaluation && (
                 <div className="evaluation-feedback">
-                  {entry.metadata.evaluation.feedback.strengths?.length > 0 && (
+                  {entry.evaluation.evidence?.length > 0 && (
                     <div className="feedback-section strengths">
                       <strong>✅ Strengths:</strong>
                       <ul>
-                        {entry.metadata.evaluation.feedback.strengths.map((s, i) => (
+                        {entry.evaluation.evidence.map((s, i) => (
                           <li key={i}>{s}</li>
                         ))}
                       </ul>
                     </div>
                   )}
-                  {entry.metadata.evaluation.feedback.recommendations?.length > 0 && (
+                  {entry.evaluation.gaps?.length > 0 && (
                     <div className="feedback-section recommendations">
-                      <strong>💡 Next Steps:</strong>
+                      <strong>💡 Areas for Improvement:</strong>
                       <ul>
-                        {entry.metadata.evaluation.feedback.recommendations.map((r, i) => (
+                        {entry.evaluation.gaps.map((r, i) => (
                           <li key={i}>{r}</li>
                         ))}
                       </ul>
                     </div>
                   )}
+                  {/* Show detailed score breakdown */}
+                  <div className="score-breakdown">
+                    <strong>📊 Score Breakdown:</strong>
+                    <div className="score-grid">
+                      <div>Clarity: <span>{entry.evaluation.scores.clarity}/15</span></div>
+                      <div>Problem Value: <span>{entry.evaluation.scores.problem_value}/20</span></div>
+                      <div>Feasibility: <span>{entry.evaluation.scores.feasibility_signal}/15</span></div>
+                      <div>Originality: <span>{entry.evaluation.scores.originality}/15</span></div>
+                      <div>Impact: <span>{entry.evaluation.scores.impact_convert}/20</span></div>
+                      <div>Submission Readiness: <span>{entry.evaluation.scores.submission_readiness || 0}/15</span></div>
+                    </div>
+                  </div>
+                  
+                  {/* Show AI explanation if available */}
+                  {entry.evaluation.raw_ai_response && (() => {
+                    try {
+                      const aiResponse = JSON.parse(entry.evaluation.raw_ai_response);
+                      const explanation = aiResponse.explanation || 
+                        (entry.evaluation.raw_ai_response.includes('Explanation:') ? 
+                          entry.evaluation.raw_ai_response.split('Explanation:')[1]?.trim() : null);
+                      
+                      if (explanation) {
+                        return (
+                          <div className="ai-explanation">
+                            <strong>🤖 AI Analysis:</strong>
+                            <div className="explanation-text">{explanation}</div>
+                          </div>
+                        );
+                      }
+                    } catch {
+                      // If parsing fails, show raw explanation if it contains "Explanation:"
+                      if (entry.evaluation.raw_ai_response.includes('Explanation:')) {
+                        const explanation = entry.evaluation.raw_ai_response.split('Explanation:')[1]?.trim();
+                        return (
+                          <div className="ai-explanation">
+                            <strong>🤖 AI Analysis:</strong>
+                            <div className="explanation-text">{explanation}</div>
+                          </div>
+                        );
+                      }
+                    }
+                    return null;
+                  })()}
                 </div>
               )}
             </div>
@@ -221,18 +245,26 @@ export default function Timeline({ entries, teamName }: TimelineProps) {
         .timeline-entries {
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          gap: 0;
+          position: relative;
         }
         
         .timeline-item {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           gap: 1rem;
-          padding: 1rem;
+          padding: 1.5rem;
           background: rgba(0, 0, 0, 0.3);
           border: 1px solid rgba(0, 212, 255, 0.3);
           border-radius: 8px;
           transition: all 0.3s ease;
+          margin-bottom: 2rem;
+          position: relative;
+        }
+        
+        .timeline-item.has-evaluation {
+          background: rgba(0, 255, 136, 0.05);
+          border-color: rgba(0, 255, 136, 0.3);
         }
         
         .timeline-item:hover {
@@ -242,8 +274,8 @@ export default function Timeline({ entries, teamName }: TimelineProps) {
         }
         
         .timeline-number {
-          width: 40px;
-          height: 40px;
+          width: 50px;
+          height: 50px;
           border-radius: 50%;
           background: linear-gradient(45deg, #00d4ff, #00ff88);
           display: flex;
@@ -252,6 +284,20 @@ export default function Timeline({ entries, teamName }: TimelineProps) {
           font-weight: bold;
           color: #1a1a2e;
           flex-shrink: 0;
+          font-size: 1.2rem;
+          z-index: 2;
+          position: relative;
+        }
+        
+        .timeline-connector {
+          position: absolute;
+          left: 1.5rem;
+          top: 3.5rem;
+          transform: translateX(25px);
+          width: 3px;
+          height: calc(100% + 0.5rem);
+          background: linear-gradient(180deg, #00d4ff, rgba(0, 212, 255, 0.3));
+          z-index: 1;
         }
         
         .timeline-content {
@@ -338,6 +384,58 @@ export default function Timeline({ entries, teamName }: TimelineProps) {
         
         .feedback-section li {
           margin-bottom: 0.25rem;
+        }
+        
+        .score-breakdown {
+          margin-top: 0.75rem;
+          padding-top: 0.75rem;
+          border-top: 1px solid rgba(0, 212, 255, 0.2);
+        }
+        
+        .score-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 0.5rem;
+          margin-top: 0.5rem;
+          color: #e0e0e0;
+          font-size: 0.9rem;
+        }
+        
+        .score-grid > div {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.25rem 0.5rem;
+          background: rgba(0, 0, 0, 0.3);
+          border-radius: 4px;
+          border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+        
+        .score-grid span {
+          color: #00d4ff;
+          font-weight: bold;
+        }
+        
+        .ai-explanation {
+          margin-top: 0.75rem;
+          padding-top: 0.75rem;
+          border-top: 1px solid rgba(0, 255, 136, 0.2);
+        }
+        
+        .ai-explanation strong {
+          color: #00ff88;
+          display: block;
+          margin-bottom: 0.5rem;
+        }
+        
+        .explanation-text {
+          color: #e0e0e0;
+          font-style: italic;
+          line-height: 1.5;
+          background: rgba(0, 255, 136, 0.05);
+          padding: 0.75rem;
+          border-radius: 6px;
+          border-left: 3px solid #00ff88;
         }
         
         .timeline-text {

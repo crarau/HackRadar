@@ -6,6 +6,15 @@ export interface TextEvaluatorInput {
   previousSummary?: string;
   messageHistory?: MessageHistory[];
   isUpdate?: boolean;
+  conversationId?: string;
+  previousScores?: {
+    clarity: number;
+    problem_value: number;
+    feasibility_signal: number;
+    originality: number;
+    impact_convert: number;
+    final_score: number;
+  };
 }
 
 export interface TextEvaluatorResult {
@@ -15,9 +24,12 @@ export interface TextEvaluatorResult {
     feasibility_signal?: number;
     originality?: number;
     impact_convert?: number;
+    final_score?: number;
   };
   evidence?: string[];
   gaps?: string[];
+  raw_response?: string; // Store the raw AI response
+  conversationId?: string; // Store the conversation ID for next call
   delta?: {
     changed: boolean;
     improvements?: string[];
@@ -30,7 +42,7 @@ export class TextEvaluator extends BaseAgent {
   }
 
   async evaluate(input: TextEvaluatorInput): Promise<TextEvaluatorResult> {
-    const { text, mode = 'initial', messageHistory = [], isUpdate = false } = input;
+    const { text, mode = 'initial', messageHistory = [], isUpdate = false, conversationId, previousScores } = input;
     
     console.log('\n📝 [TextEvaluator] Starting evaluation...');
     console.log(`Mode: ${mode}`);
@@ -52,49 +64,59 @@ export class TextEvaluator extends BaseAgent {
           impact_convert: 0
         },
         evidence: [],
-        gaps: ['No meaningful text provided']
+        gaps: ['No meaningful text provided'],
+        raw_response: 'Text too short for evaluation'
       };
     }
 
     let prompt: string;
     
     if (isUpdate && messageHistory.length > 0) {
-      // For updates, emphasize cumulative evaluation
+      // For updates, emphasize ADDITIVE/CUMULATIVE evaluation with explicit score minimums
+      const prevScoresText = previousScores ? `
+📊 PREVIOUS SCORES (ABSOLUTE MINIMUMS):
+- Clarity: ${previousScores.clarity}/15 (NEW SCORE MUST BE >= ${previousScores.clarity})
+- Problem Value: ${previousScores.problem_value}/20 (NEW SCORE MUST BE >= ${previousScores.problem_value})
+- Feasibility: ${previousScores.feasibility_signal}/15 (NEW SCORE MUST BE >= ${previousScores.feasibility_signal})
+- Originality: ${previousScores.originality}/15 (NEW SCORE MUST BE >= ${previousScores.originality})
+- Impact: ${previousScores.impact_convert}/20 (NEW SCORE MUST BE >= ${previousScores.impact_convert})
+- Previous Total: ${previousScores.final_score}/100` : '';
+
       prompt = `This is an UPDATE to an ongoing hackathon project evaluation.
 
 NEW UPDATE:
 ${text}
+${prevScoresText}
 
-CRITICAL INSTRUCTIONS:
-1. You have access to the full conversation history above
-2. This new text is just an incremental update, NOT the complete project description
-3. Evaluate the ENTIRE PROJECT based on ALL accumulated information
-4. If previous submissions mentioned demos, repos, metrics, etc., those STILL COUNT
-5. The new update may be brief (even one sentence) - that's normal
-6. DO NOT penalize for brevity if the project has been well-described previously
+🚨 MANDATORY CUMULATIVE SCORING RULES:
+1. You have FULL ACCESS to conversation history above
+2. This update ADDS to existing project achievements
+3. SCORES CANNOT GO BELOW the previous values shown above
+4. Each category score MUST be >= the previous score for that category
+5. Only decrease if this update explicitly mentions failures/problems
+6. Positive updates (users, features, customers) should INCREASE scores
 
-Provide scores for the COMPLETE PROJECT STATE, considering everything you know:
+SCORING ENFORCEMENT:
+- Take the MAXIMUM of (previous score, new evidence level) for each category
+- If previous clarity was 14/15, new clarity must be 14 or 15 (never lower)
+- If previous feasibility was 9/10, new feasibility must be 9 or 10 (never lower)
+- Brief updates maintain previous achievements while adding new value
+
+Provide scores that respect the MINIMUM thresholds above:
 
 {
   "subscores": {
-    "clarity": <0-15, based on overall message clarity across all submissions>,
-    "problem_value": <0-20, based on problem understanding from all context>,
-    "feasibility_signal": <0-10, evidence from all submissions>,
-    "originality": <0-10, innovation shown throughout>,
-    "impact_convert": <0-20, conversion potential of complete pitch>
+    "clarity": <${previousScores ? `${previousScores.clarity}` : '0'}-15, must be >= ${previousScores ? previousScores.clarity : '0'}>,
+    "problem_value": <${previousScores ? `${previousScores.problem_value}` : '0'}-20, must be >= ${previousScores ? previousScores.problem_value : '0'}>,
+    "feasibility_signal": <${previousScores ? `${previousScores.feasibility_signal}` : '0'}-15, must be >= ${previousScores ? previousScores.feasibility_signal : '0'}>,
+    "originality": <${previousScores ? `${previousScores.originality}` : '0'}-15, must be >= ${previousScores ? previousScores.originality : '0'}>,
+    "impact_convert": <${previousScores ? `${previousScores.impact_convert}` : '0'}-20, must be >= ${previousScores ? previousScores.impact_convert : '0'}>
   },
-  "evidence": [<list all strengths from current + previous submissions>],
-  "gaps": [<what's still missing for a complete pitch>]
+  "evidence": [<ALL evidence from complete project history>],
+  "gaps": [<remaining gaps despite all progress>]
 }
 
-Scoring Rules:
-- Clarity: How clear is the COMPLETE pitch (not just this update)
-- Problem Value: Total problem articulation across all submissions
-- Feasibility: All evidence of working solution shown so far
-- Originality: Innovation demonstrated throughout
-- Impact/Convert: Overall conversion strength of full pitch
-
-Remember: Brief updates are normal. Score the WHOLE PROJECT.`;
+⚠️ CRITICAL: Your scores will be rejected if any category is below its previous value!`;
     } else {
       // For initial submission, use original prompt
       prompt = `Evaluate this hackathon pitch and provide scores with strict maximums.
@@ -109,8 +131,8 @@ Provide a JSON response with this exact structure:
   "subscores": {
     "clarity": <0-15, based on 12-year-old test, hook quality, conciseness>,
     "problem_value": <0-20, based on acute pain points and quantified value>,
-    "feasibility_signal": <0-10, evidence of working solution>,
-    "originality": <0-10, innovation and differentiation>,
+    "feasibility_signal": <0-15, evidence of working solution>,
+    "originality": <0-15, innovation and differentiation>,
     "impact_convert": <0-20, call-to-action strength and conversion potential>
   },
   "evidence": [<list of strengths found in the text>],
@@ -120,85 +142,125 @@ Provide a JSON response with this exact structure:
 Rules:
 - Clarity max 15: Clear hook, no jargon, concise message
 - Problem Value max 20: Identifies real pain, quantifies impact
-- Feasibility max 10: Shows working solution or strong evidence
-- Originality max 10: Novel approach or unique angle
+- Feasibility max 15: Shows working solution or strong evidence
+- Originality max 15: Novel approach or unique angle
 - Impact/Convert max 20: Strong CTA, clear next steps, conversion focus
 
 Be strict with scoring. Most pitches should score 40-60 total.`;
     }
 
     try {
-      const response = await this.callAnthropic(prompt, messageHistory);
+      console.log(`🔗 [TextEvaluator] Using conversation ID: ${conversationId || 'new conversation'}`);
+      const { response, conversationId: newConversationId } = await this.callAnthropic(prompt, messageHistory, conversationId);
       
       console.log('\n📜 [TextEvaluator] Raw AI Response:');
       console.log(response);
       
       let result: TextEvaluatorResult;
       try {
-        const parsed = JSON.parse(response);
-        console.log('📊 [TextEvaluator] Parsed JSON:', parsed);
+        // First, try to clean the response to ensure it's valid JSON
+        let cleanResponse = response.trim();
+        
+        // Remove any markdown code blocks if present
+        if (cleanResponse.startsWith('```json')) {
+          cleanResponse = cleanResponse.replace(/```json\s*/, '').replace(/```\s*$/, '');
+        } else if (cleanResponse.startsWith('```')) {
+          cleanResponse = cleanResponse.replace(/```[a-z]*\s*/, '').replace(/```\s*$/, '');
+        }
+        
+        console.log('📊 [TextEvaluator] Cleaned response for parsing:', cleanResponse);
+        
+        const parsed = JSON.parse(cleanResponse);
+        console.log('📊 [TextEvaluator] Parsed JSON:', JSON.stringify(parsed, null, 2));
+        
+        // More robust extraction with validation - NO FALLBACKS!
+        if (!parsed.subscores) {
+          throw new Error('AI response missing subscores object');
+        }
+        
+        const subscores = parsed.subscores;
+        
+        // Validate all required scores exist
+        const requiredScores = ['clarity', 'problem_value', 'feasibility_signal', 'originality', 'impact_convert'];
+        for (const scoreKey of requiredScores) {
+          if (subscores[scoreKey] === undefined || subscores[scoreKey] === null) {
+            throw new Error(`AI response missing required score: ${scoreKey}`);
+          }
+        }
         
         result = {
           subscores: {
-            clarity: parsed.subscores?.clarity || 0,
-            problem_value: parsed.subscores?.problem_value || 0,
-            feasibility_signal: parsed.subscores?.feasibility_signal || 0,
-            originality: parsed.subscores?.originality || 0,
-            impact_convert: parsed.subscores?.impact_convert || 0
+            clarity: Number(subscores.clarity),
+            problem_value: Number(subscores.problem_value),
+            feasibility_signal: Number(subscores.feasibility_signal),
+            originality: Number(subscores.originality),
+            impact_convert: Number(subscores.impact_convert)
           },
-          evidence: parsed.evidence || [],
-          gaps: parsed.gaps || []
+          evidence: Array.isArray(parsed.evidence) ? parsed.evidence : [],
+          gaps: Array.isArray(parsed.gaps) ? parsed.gaps : [],
+          raw_response: response, // Store the original AI response
+          conversationId: newConversationId // Store the conversation ID for next call
         };
         
+        // Calculate final_score ourselves for accuracy (values already validated above)
+        result.subscores.final_score = 
+          result.subscores.clarity! + 
+          result.subscores.problem_value! + 
+          result.subscores.feasibility_signal! + 
+          result.subscores.originality! + 
+          result.subscores.impact_convert!;
+        
+        // Log the final extracted values
         console.log('✅ [TextEvaluator] Successfully extracted scores:', result.subscores);
-      } catch (parseError) {
-        console.error('⚠️ [TextEvaluator] JSON parse error:', parseError);
-        console.log('Response that failed to parse:', response);
+        console.log('✅ [TextEvaluator] Evidence items:', result.evidence?.length || 0);
+        console.log('✅ [TextEvaluator] Gap items:', result.gaps?.length || 0);
         
-        // Fallback - use default scores
-        result = {
-          subscores: {
-            clarity: 5,
-            problem_value: 5,
-            feasibility_signal: 3,
-            originality: 3,
-            impact_convert: 5
-          },
-          evidence: ['Text submitted'],
-          gaps: ['Could not parse AI response']
-        };
+        // Verify we have valid scores - NO FALLBACKS!
+        const totalScore = Object.values(result.subscores).reduce((sum, score) => sum + score, 0);
+        console.log('📈 [TextEvaluator] Total score extracted:', totalScore);
+        
+        // Validate scores are reasonable numbers
+        for (const [key, value] of Object.entries(result.subscores)) {
+          if (isNaN(value) || value < 0) {
+            throw new Error(`Invalid score for ${key}: ${value} (must be a positive number)`);
+          }
+        }
+        
+        if (totalScore === 0) {
+          throw new Error('All extracted scores are zero - this indicates a critical evaluation failure');
+        }
+        
+      } catch (parseError) {
+        console.error('❌ [TextEvaluator] PARSING FAILED - NO FALLBACK!');
+        console.log('Raw response that failed to parse:');
+        console.log('---START RESPONSE---');
+        console.log(response);
+        console.log('---END RESPONSE---');
+        console.error('Parse error details:', parseError);
+        
+        // NO FALLBACK - Let it fail completely!
+        throw new Error(`TextEvaluator parsing failed: ${parseError}. Raw response: ${response}`);
       }
 
-      // Enforce maximums
-      if (result.subscores) {
-        result.subscores.clarity = Math.min(15, result.subscores.clarity || 0);
-        result.subscores.problem_value = Math.min(20, result.subscores.problem_value || 0);
-        result.subscores.feasibility_signal = Math.min(10, result.subscores.feasibility_signal || 0);
-        result.subscores.originality = Math.min(10, result.subscores.originality || 0);
-        result.subscores.impact_convert = Math.min(20, result.subscores.impact_convert || 0);
-      }
+      // Enforce maximums - NO FALLBACKS! (values already validated above)
+      result.subscores.clarity = Math.min(15, result.subscores.clarity!);
+      result.subscores.problem_value = Math.min(20, result.subscores.problem_value!);
+      result.subscores.feasibility_signal = Math.min(10, result.subscores.feasibility_signal!);
+      result.subscores.originality = Math.min(10, result.subscores.originality!);
+      result.subscores.impact_convert = Math.min(20, result.subscores.impact_convert!);
 
       console.log('\n✅ [TextEvaluator] Evaluation complete:');
       console.log('  Scores:', result.subscores);
-      console.log('  Total:', Object.values(result.subscores).reduce((a, b) => (a || 0) + (b || 0), 0));
+      console.log('  Total:', Object.values(result.subscores).reduce((a, b) => a + b, 0));
       console.log('  Evidence:', result.evidence?.length || 0, 'items');
       console.log('  Gaps:', result.gaps?.length || 0, 'items');
 
       return result;
     } catch (error) {
-      this.log(`Failed to evaluate text: ${error}`);
-      // Return minimum scores if API fails
-      return {
-        subscores: {
-          clarity: 3,
-          problem_value: 3,
-          feasibility_signal: 2,
-          originality: 2,
-          impact_convert: 3
-        },
-        evidence: ['Submission received'],
-        gaps: ['Evaluation service temporarily unavailable']
-      };
+      this.log(`❌ TextEvaluator COMPLETELY FAILED - NO FALLBACK!`);
+      this.log(`Error details: ${error}`);
+      // NO FALLBACK - Let the whole evaluation system fail!
+      throw new Error(`TextEvaluator evaluation failed: ${error}`);
     }
   }
 }

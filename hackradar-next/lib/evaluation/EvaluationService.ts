@@ -64,6 +64,7 @@ export class EvaluationService {
     scores: EvaluationScores;
     delta: EvaluationDelta | null;
     metadata: EvaluationMetadata;
+    textEval: TextEvaluatorResult;
     sr_tracker: {
       readiness_score: number;
       checklist: ReadinessChecklist;
@@ -92,33 +93,79 @@ export class EvaluationService {
     }
 
     // Get ALL submission history to build conversation context
+    console.log('\n🔍 [EvaluationService] Querying for previous submissions...');
+    console.log('  Project ID:', projectId);
+    
     const previousSubmissions = await this.db.collection('timeline')
       .find({ 
         projectId,
-        'metadata.evaluation': { $exists: true }
+        'evaluation': { $exists: true }
       })
       .sort({ createdAt: 1 }) // Oldest first to build conversation chronologically
       .toArray();
+    
+    console.log(`🔍 [EvaluationService] Found ${previousSubmissions.length} previous submissions with evaluations`);
+    previousSubmissions.forEach((sub, i) => {
+      console.log(`  ${i + 1}. Text: "${sub.text?.substring(0, 50)}..."`);
+      console.log(`     Has evaluation: ${!!sub.evaluation}`);
+      console.log(`     Evaluation scores: ${sub.evaluation?.scores?.final_score || 'none'}`);
+    });
 
     const lastSubmission = previousSubmissions[previousSubmissions.length - 1];
-    const submissionNumber = (lastSubmission?.metadata?.submission_number || 0) + 1;
+    const submissionNumber = previousSubmissions.length + 1; // Simply count existing submissions
     
-    // Build message history from all previous submissions
-    const messageHistory = this.buildMessageHistory(previousSubmissions as Array<{
+    // Get the conversation ID from the most recent submission
+    const conversationId = lastSubmission?.anthropic_conversation_id;
+    console.log(`🔗 [EvaluationService] Previous conversation ID: ${conversationId || 'none (starting new)'}`);
+    console.log(`📊 [EvaluationService] Submission #${submissionNumber}`);
+    
+    // Extract previous scores for cumulative evaluation
+    const previousScores = lastSubmission?.evaluation?.scores ? {
+      clarity: lastSubmission.evaluation.scores.clarity,
+      problem_value: lastSubmission.evaluation.scores.problem_value, 
+      feasibility_signal: lastSubmission.evaluation.scores.feasibility_signal,
+      originality: lastSubmission.evaluation.scores.originality,
+      impact_convert: lastSubmission.evaluation.scores.impact_convert,
+      final_score: lastSubmission.evaluation.scores.final_score
+    } : undefined;
+    
+    if (previousScores) {
+      console.log(`📊 [EvaluationService] Previous scores for cumulative evaluation:`);
+      console.log(`   Clarity: ${previousScores.clarity}/15`);
+      console.log(`   Problem Value: ${previousScores.problem_value}/20`);
+      console.log(`   Feasibility: ${previousScores.feasibility_signal}/10`);
+      console.log(`   Originality: ${previousScores.originality}/10`);
+      console.log(`   Impact: ${previousScores.impact_convert}/20`);
+      console.log(`   Total: ${previousScores.final_score}/100`);
+    }
+    
+    // Build message history from all previous submissions - FORCE SUCCESS
+    let messageHistory = [];
+    try {
+      messageHistory = this.buildMessageHistory(previousSubmissions as Array<{
       text?: string;
       files?: Array<{ name: string; type: string; size: number }>;
       url?: string;
-      metadata?: {
-        submission_number?: number;
-        evaluation?: {
-          final_score?: number;
-          feedback?: {
-            strengths?: string[];
-            weaknesses?: string[];
-          };
+      evaluation?: {
+        scores: {
+          final_score: number;
+          clarity: number;
+          problem_value: number;
+          feasibility_signal: number;
+          originality: number;
+          impact_convert: number;
         };
+        evidence: string[];
+        gaps: string[];
       };
+      anthropic_conversation_id?: string;
+      createdAt?: string;
     }>);
+    } catch (historyError) {
+      console.error('❌ [EvaluationService] MESSAGE HISTORY BUILD FAILED - CONTINUING WITHOUT HISTORY:');
+      console.error('  Error:', historyError?.message || 'Unknown');
+      messageHistory = []; // Continue without history rather than failing completely
+    }
     const logger = getDebugLogger();
     
     if (messageHistory.length > 0) {
@@ -142,22 +189,69 @@ export class EvaluationService {
     
     console.log('\n🔄 Running evaluations in parallel...');
     // Run evaluations in parallel
-    const [textEval, srEval] = await Promise.all([
-      this.textEvaluator.evaluate({
-        text: text || '',
-        mode: lastSubmission ? 'update' : 'initial',
-        previousSummary: lastSubmission?.text,
-        messageHistory,
-        isUpdate: previousSubmissions.length > 0
-      }),
-      this.srTracker.evaluate({
-        userMessage,
-        currentSnapshot: snapshot,
-        progressState: {
-          submission_readiness_checklist: project.submission_readiness_checklist
-        }
-      })
-    ]);
+    console.log('\n🤖 [EvaluationService] About to run TextEvaluator...');
+    console.log('  Text length:', text?.length || 0);
+    console.log('  Message history length:', messageHistory.length);
+    console.log('  Is update mode:', previousSubmissions.length > 0);
+    
+    let textEval, srEval;
+    try {
+      [textEval, srEval] = await Promise.all([
+        this.textEvaluator.evaluate({
+          text: text || '',
+          mode: lastSubmission ? 'update' : 'initial',
+          previousSummary: lastSubmission?.text,
+          messageHistory,
+          isUpdate: previousSubmissions.length > 0,
+          conversationId: conversationId,
+          previousScores: previousScores
+        }),
+        this.srTracker.evaluate({
+          userMessage,
+          currentSnapshot: snapshot,
+          progressState: {
+            submission_readiness_checklist: project.submission_readiness_checklist
+          }
+        })
+      ]);
+      
+      console.log('✅ [EvaluationService] Both evaluators completed successfully');
+      console.log('  TextEval final_score:', textEval?.subscores?.final_score || 'none');
+      console.log('  SRTracker readiness:', srEval?.submission_readiness_score || 0);
+      
+    } catch (evalError) {
+      console.error('❌ [EvaluationService] EVALUATOR FAILED - FORCING BASIC EVALUATION:');
+      console.error('  Error:', evalError?.message || 'Unknown');
+      console.error('  Stack:', evalError?.stack || 'No stack');
+      
+      // FORCE BASIC EVALUATION WITHOUT CONVERSATION HISTORY
+      console.log('🔄 [EvaluationService] Attempting basic evaluation without history...');
+      try {
+        [textEval, srEval] = await Promise.all([
+          this.textEvaluator.evaluate({
+            text: text || '',
+            mode: 'initial', // Force initial mode
+            previousSummary: undefined,
+            messageHistory: [], // No history
+            isUpdate: false,
+            conversationId: undefined, // No conversation ID
+            previousScores: previousScores // Still pass previous scores for basic evaluation
+          }),
+          this.srTracker.evaluate({
+            userMessage,
+            currentSnapshot: snapshot,
+            progressState: {
+              submission_readiness_checklist: project.submission_readiness_checklist
+            }
+          })
+        ]);
+        console.log('✅ [EvaluationService] Basic evaluation succeeded');
+      } catch (basicError) {
+        console.error('❌ [EvaluationService] EVEN BASIC EVALUATION FAILED:');
+        console.error('  Error:', basicError?.message || 'Unknown');
+        throw basicError; // Re-throw to be caught by timeline API
+      }
+    }
     
     // Results are already properly typed
     const textEvalResult = textEval;
@@ -179,8 +273,8 @@ export class EvaluationService {
     let delta: EvaluationDelta | null = null;
     let changes: Record<string, string> = {};
     
-    if (lastSubmission?.metadata?.evaluation) {
-      const prevScores = lastSubmission.metadata.evaluation;
+    if (lastSubmission?.evaluation?.scores) {
+      const prevScores = lastSubmission.evaluation.scores;
       delta = this.calculateDelta(scores, prevScores);
       changes = this.generateChanges(scores, prevScores);
     }
@@ -250,6 +344,7 @@ export class EvaluationService {
       scores,
       delta,
       metadata,
+      textEval: textEvalResult, // Include full TextEvaluator result
       sr_tracker: {
         readiness_score: srEvalResult.submission_readiness_score || 0,
         checklist: srEvalResult.checklist_update || {},
@@ -288,24 +383,25 @@ export class EvaluationService {
     console.log('TextEval subscores:', textEval.subscores);
     console.log('SRTracker readiness score:', srEval.submission_readiness_score);
     
-    const scores: EvaluationScores = {
-      clarity: Math.min(15, textEval.subscores.clarity || 0),
-      problem_value: Math.min(20, textEval.subscores.problem_value || 0),
-      feasibility: Math.min(15, textEval.subscores.feasibility_signal || 0), // Changed from fallback 5 to 0
-      originality: Math.min(15, textEval.subscores.originality || 0), // Changed from fallback 5 to 0
-      impact_convert: Math.min(20, textEval.subscores.impact_convert || 0),
-      submission_readiness: Math.min(15, srEval.submission_readiness_score || 0),
-      final_score: 0
-    };
+    // Validate required scores exist - NO FALLBACKS!
+    if (!textEval.subscores) {
+      throw new Error('TextEvaluator did not return subscores');
+    }
     
-    // Calculate final score properly
-    scores.final_score = 
-      scores.clarity + 
-      scores.problem_value + 
-      scores.feasibility + 
-      scores.originality + 
-      scores.impact_convert + 
-      scores.submission_readiness;
+    if (textEval.subscores.final_score === undefined || textEval.subscores.final_score === null) {
+      throw new Error('TextEvaluator did not calculate final_score');
+    }
+    
+    // Use TextEvaluator scores directly - they're already calculated accurately
+    const scores: EvaluationScores = {
+      clarity: textEval.subscores.clarity!,
+      problem_value: textEval.subscores.problem_value!,
+      feasibility: textEval.subscores.feasibility_signal!,
+      originality: textEval.subscores.originality!,
+      impact_convert: textEval.subscores.impact_convert!,
+      submission_readiness: Math.min(15, srEval.submission_readiness_score || 0), // SRTracker can be 0
+      final_score: textEval.subscores.final_score! + Math.min(15, srEval.submission_readiness_score || 0)
+    };
     
     console.log('Aggregated scores:', scores);
     console.log('Final score:', scores.final_score);
@@ -420,19 +516,27 @@ export class EvaluationService {
     text?: string;
     files?: Array<{ name: string; type: string; size: number }>;
     url?: string;
-    metadata?: {
-      submission_number?: number;
-      evaluation?: {
-        final_score?: number;
-        feedback?: {
-          strengths?: string[];
-          weaknesses?: string[];
-        };
+    evaluation?: {
+      scores: {
+        final_score: number;
+        clarity: number;
+        problem_value: number;
+        feasibility_signal: number;
+        originality: number;
+        impact_convert: number;
       };
+      evidence: string[];
+      gaps: string[];
     };
+    createdAt?: string;
   }>): MessageHistory[] {
     const history: MessageHistory[] = [];
     const logger = getDebugLogger();
+    
+    console.log(`\n🏗️ [buildMessageHistory] Starting with ${submissions.length} submissions`);
+    submissions.forEach((sub, i) => {
+      console.log(`  ${i + 1}. "${sub.text?.substring(0, 30)}..." - Has eval: ${!!sub.evaluation}`);
+    });
     
     // System prompt to establish context
     if (submissions.length > 0) {
@@ -450,16 +554,18 @@ IMPORTANT: When scoring, consider the cumulative knowledge about the project. If
     }
     
     // Add each previous submission to the conversation
-    for (const submission of submissions) {
+    for (let i = 0; i < submissions.length; i++) {
+      const submission = submissions[i];
+      
       // User submission
-      const userContent = this.formatSubmissionForHistory(submission);
+      const userContent = this.formatSubmissionForHistory(submission, i);
       history.push({
         role: 'user',
         content: userContent
       });
       
       // Assistant evaluation response (simplified)
-      const evalResponse = this.formatEvaluationForHistory(submission.metadata?.evaluation);
+      const evalResponse = this.formatEvaluationForHistory(submission.evaluation);
       history.push({
         role: 'assistant',
         content: evalResponse
@@ -475,13 +581,11 @@ IMPORTANT: When scoring, consider the cumulative knowledge about the project. If
     text?: string;
     files?: Array<{ name: string; type: string; size: number }>;
     url?: string;
-    metadata?: {
-      submission_number?: number;
-    };
-  }): string {
+    createdAt?: string;
+  }, index: number): string {
     const parts: string[] = [];
     
-    parts.push(`[Submission #${submission.metadata?.submission_number || 1}]`);
+    parts.push(`[Submission #${index + 1}]`);
     
     if (submission.text) {
       parts.push(`Text: ${submission.text}`);
@@ -500,26 +604,31 @@ IMPORTANT: When scoring, consider the cumulative knowledge about the project. If
   }
   
   private formatEvaluationForHistory(evaluation?: {
-    final_score?: number;
-    feedback?: {
-      strengths?: string[];
-      weaknesses?: string[];
+    scores: {
+      final_score: number;
+      clarity: number;
+      problem_value: number;
+      feasibility_signal: number;
+      originality: number;
+      impact_convert: number;
     };
+    evidence: string[];
+    gaps: string[];
   }): string {
-    if (!evaluation) {
+    if (!evaluation || !evaluation.scores) {
       return 'Evaluation noted.';
     }
     
     const parts: string[] = [];
     
-    parts.push(`Score: ${evaluation.final_score}/100`);
+    parts.push(`Score: ${evaluation.scores.final_score}/100`);
     
-    if (evaluation.feedback?.strengths && evaluation.feedback.strengths.length > 0) {
-      parts.push(`Strengths: ${evaluation.feedback.strengths.join('; ')}`);
+    if (evaluation.evidence && evaluation.evidence.length > 0) {
+      parts.push(`Strengths: ${evaluation.evidence.join('; ')}`);
     }
     
-    if (evaluation.feedback?.weaknesses && evaluation.feedback.weaknesses.length > 0) {
-      parts.push(`Areas for improvement: ${evaluation.feedback.weaknesses.join('; ')}`);
+    if (evaluation.gaps && evaluation.gaps.length > 0) {
+      parts.push(`Areas for improvement: ${evaluation.gaps.join('; ')}`);
     }
     
     return parts.join('\n');

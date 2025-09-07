@@ -20,6 +20,21 @@ export interface TimelineEntry {
   fileSize?: number;
   description?: string;
   createdAt: Date;
+  anthropic_conversation_id?: string; // Store Anthropic conversation ID for continuity
+  evaluation?: {
+    scores: {
+      clarity: number;
+      problem_value: number;
+      feasibility_signal: number;
+      originality: number;
+      impact_convert: number;
+      final_score: number;
+    };
+    evidence: string[];
+    gaps: string[];
+    raw_ai_response?: string;
+    evaluated_at: Date;
+  };
 }
 
 export interface Assessment {

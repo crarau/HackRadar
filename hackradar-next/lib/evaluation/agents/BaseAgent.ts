@@ -40,7 +40,11 @@ export class BaseAgent {
     }
   }
 
-  protected async callAnthropic(prompt: string, messageHistory: MessageHistory[] = []): Promise<string> {
+  protected async callAnthropic(
+    prompt: string, 
+    messageHistory: MessageHistory[] = [],
+    conversationId?: string
+  ): Promise<{ response: string; conversationId: string }> {
     const logger = getDebugLogger();
     
     try {
@@ -51,6 +55,9 @@ export class BaseAgent {
       ];
       
       // Log the conversation context
+      if (conversationId) {
+        logger.log(`🔗 [${this.name}] Continuing conversation: ${conversationId}`);
+      }
       if (messageHistory.length > 0) {
         logger.log(`📚 [${this.name}] Using conversation history with ${messageHistory.length} previous messages`);
       }
@@ -58,19 +65,29 @@ export class BaseAgent {
       
       const startTime = Date.now();
       
-      const response = await this.anthropic.messages.create({
-        model: 'claude-3-haiku-20240307', // Fast and cheap for evaluations
+      // Build request parameters - Anthropic doesn't support conversation_id in metadata
+      const requestParams: any = {
+        model: 'claude-3-5-sonnet-20240620', // Better reasoning for cumulative evaluation
         max_tokens: 1000,
         messages
-      });
+      };
+      
+      const response = await this.anthropic.messages.create(requestParams);
 
       const duration = Date.now() - startTime;
       
       const content = response.content[0];
       if (content.type === 'text') {
-        // Log the response received
+        // Use the response ID as conversation ID for continuity
+        const returnedConversationId = response.id;
+        
+        logger.log(`🆔 [${this.name}] Conversation ID: ${returnedConversationId}`);
         logger.logResponse(this.name, content.text, duration);
-        return content.text;
+        
+        return {
+          response: content.text,
+          conversationId: returnedConversationId
+        };
       }
       
       throw new Error('Invalid response from Anthropic');
@@ -112,9 +129,12 @@ export class BaseAgent {
       final_score: 0
     };
     
-    // Apply anchors and clamp values
+    // Apply anchors and clamp values - NO FALLBACKS!
     for (const [key, max] of Object.entries(anchors)) {
-      const value = scores[key as keyof typeof scores] || 0;
+      const value = scores[key as keyof typeof scores];
+      if (value === undefined || value === null) {
+        throw new Error(`Missing required score: ${key}`);
+      }
       result[key as keyof typeof anchors] = Math.min(Math.max(0, value), max);
     }
     
