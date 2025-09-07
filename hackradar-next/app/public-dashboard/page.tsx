@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { FiUsers, FiZap } from 'react-icons/fi';
+import { FiUsers, FiZap, FiLogOut } from 'react-icons/fi';
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartOptions, ChartData } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import '../App.css';
 
 // Register Chart.js components
@@ -294,10 +295,21 @@ const useTeamData = () => {
 
 const DashboardContent = () => {
   const { teams, animatingBars, isLoading } = useTeamData();
+  const [showLogin, setShowLogin] = useState(false);
 
   // Calculate stats
   const topScore = teams.length > 0 ? teams[0].combinedScore : 0;
   const averageScore = teams.length > 0 ? Math.round(teams.reduce((sum, team) => sum + team.combinedScore, 0) / teams.length) : 0;
+
+  const handleGoogleSuccess = (credentialResponse: any) => {
+    console.log('Google login successful:', credentialResponse);
+    // Redirect to dashboard after successful login
+    window.location.href = '/dashboard';
+  };
+
+  const handleGoogleError = () => {
+    console.error('Google login failed');
+  };
 
   return (
     <div style={{ 
@@ -310,30 +322,87 @@ const DashboardContent = () => {
       position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* QR Code in corner */}
+      {/* Login Section in corner */}
       <div style={{
         position: 'absolute',
         top: '2rem',
         right: '2rem',
         zIndex: 1000,
-        background: 'rgba(255, 255, 255, 0.95)',
-        borderRadius: '12px',
-        padding: '1rem',
-        textAlign: 'center',
-        border: '2px solid #00d4ff',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem',
+        alignItems: 'center'
       }}>
-        <img 
-          src="/api/qr-code?url=https://hackradar.me" 
-          alt="Login QR Code"
-          style={{ width: '120px', height: '120px', display: 'block' }}
-        />
-        <div style={{ 
-          color: '#0a0a1a', 
-          fontSize: '0.8rem', 
-          fontWeight: 'bold',
-          marginTop: '0.5rem'
+        {/* Google Login Button */}
+        {!showLogin ? (
+          <button
+            onClick={() => setShowLogin(true)}
+            style={{
+              background: 'linear-gradient(45deg, #00d4ff, #00ff88)',
+              color: '#0a0a1a',
+              border: 'none',
+              borderRadius: '50px',
+              padding: '1rem 2rem',
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 5px 20px rgba(0, 212, 255, 0.3)',
+              animation: 'pulse 2s ease-in-out infinite'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 212, 255, 0.5)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 5px 20px rgba(0, 212, 255, 0.3)';
+            }}
+          >
+            Join HackRadar →
+          </button>
+        ) : (
+          <div style={{
+            transform: 'scale(1.2)',
+            padding: '1rem',
+            background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.1))',
+            borderRadius: '20px',
+            border: '2px solid rgba(0, 212, 255, 0.3)',
+            boxShadow: '0 10px 40px rgba(0, 212, 255, 0.2)'
+          }}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              useOneTap={false}
+              theme="filled_blue"
+              size="large"
+              text="continue_with"
+              shape="pill"
+            />
+          </div>
+        )}
+        
+        {/* QR Code below */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.95)',
+          borderRadius: '12px',
+          padding: '1rem',
+          textAlign: 'center',
+          border: '2px solid #00d4ff',
         }}>
-          Scan to Login
+          <img 
+            src="/api/qr-code?url=https://hackradar.me" 
+            alt="Login QR Code"
+            style={{ width: '100px', height: '100px', display: 'block' }}
+          />
+          <div style={{ 
+            color: '#0a0a1a', 
+            fontSize: '0.75rem', 
+            fontWeight: 'bold',
+            marginTop: '0.5rem'
+          }}>
+            Scan to Login
+          </div>
         </div>
       </div>
 
@@ -456,9 +525,22 @@ const DashboardContent = () => {
 };
 
 export default function PublicDashboard() {
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+  if (!googleClientId) {
+    console.error('Google Client ID not configured');
+    return (
+      <QueryClientProvider client={queryClient}>
+        <DashboardContent />
+      </QueryClientProvider>
+    );
+  }
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <DashboardContent />
-    </QueryClientProvider>
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <QueryClientProvider client={queryClient}>
+        <DashboardContent />
+      </QueryClientProvider>
+    </GoogleOAuthProvider>
   );
 }

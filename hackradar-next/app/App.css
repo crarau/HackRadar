@@ -521,6 +521,17 @@ body {
   to { transform: rotate(360deg); }
 }
 
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1.5);
+    box-shadow: 0 10px 40px rgba(0, 212, 255, 0.2);
+  }
+  50% {
+    transform: scale(1.55);
+    box-shadow: 0 15px 50px rgba(0, 212, 255, 0.4);
+  }
+}
+
 /* Access Team Portal Button */
 .access-button-container {
   text-align: center;

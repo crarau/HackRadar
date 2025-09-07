@@ -378,7 +378,34 @@ export default function Home() {
                   <FiZap className="logo" />
                   <h1>HackRadar</h1>
                 </div>
-                <div className="header-tagline">Get AI Feedback to Improve & Win Hackathons</div>
+                <a 
+                  href="/public-dashboard" 
+                  className="dashboard-link"
+                  style={{
+                    position: 'absolute',
+                    right: '2rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    padding: '0.75rem 1.5rem',
+                    background: 'linear-gradient(135deg, #00d4ff, #0099cc)',
+                    color: 'white',
+                    textDecoration: 'none',
+                    borderRadius: '8px',
+                    fontWeight: '600',
+                    transition: 'all 0.3s ease',
+                    fontSize: '0.9rem'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-50%) scale(1.05)';
+                    e.currentTarget.style.boxShadow = '0 5px 20px rgba(0, 212, 255, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-50%)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  🏆 View Live Dashboard
+                </a>
               </motion.header>
 
               <main className="landing-main">
@@ -389,27 +416,43 @@ export default function Home() {
                   className="hero-section"
                 >
                   <h2 className="hero-title">
-                    <span className="gradient-text">Get Actionable Feedback</span>
+                    <span className="gradient-text">Real-Time AI Evaluation</span>
                     <br />
-                    <span className="highlight">Improve & Win</span>
+                    <span className="highlight">For Hackathon Teams</span>
                   </h2>
                   
                   <p className="hero-description">
-                    Don&apos;t just get a score - get specific guidance on how to improve your project.
-                    Upload your updates, screenshots, or pitch materials and receive detailed AI feedback
-                    with actionable steps to strengthen your submission and increase your chances of winning.
+                    Upload your project updates, screenshots, or pitch materials and receive instant AI-powered evaluation
+                    with specific, actionable feedback to improve your submission. Track your progress in real-time
+                    and see exactly how to strengthen your project.
                   </p>
 
                   <div className="cta-container">
-                    <GoogleLogin
-                      onSuccess={handleLoginSuccess}
-                      onError={() => console.log('Login Failed')}
-                      theme="filled_black"
-                      size="large"
-                      text="continue_with"
-                      shape="pill"
-                    />
-                    <div className="login-note">Sign in with Google → Upload your project → Get instant improvement tips</div>
+                    <div style={{
+                      transform: 'scale(1.5)',
+                      padding: '1.5rem',
+                      background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.1))',
+                      borderRadius: '20px',
+                      border: '2px solid rgba(0, 212, 255, 0.3)',
+                      boxShadow: '0 10px 40px rgba(0, 212, 255, 0.2)',
+                      animation: 'pulse 2s ease-in-out infinite'
+                    }}>
+                      <GoogleLogin
+                        onSuccess={handleLoginSuccess}
+                        onError={() => console.log('Login Failed')}
+                        theme="filled_black"
+                        size="large"
+                        text="continue_with"
+                        shape="pill"
+                      />
+                    </div>
+                    <div className="login-note" style={{ 
+                      fontSize: '1.1rem', 
+                      marginTop: '1.5rem',
+                      fontWeight: '600'
+                    }}>
+                      🚀 Sign in to start receiving AI-powered feedback for your hackathon project
+                    </div>
                   </div>
                 </motion.div>
 
@@ -447,23 +490,32 @@ export default function Home() {
                   transition={{ duration: 0.5, delay: 0.8 }}
                   className="access-button-container"
                 >
-                  <a 
-                    href="/public-dashboard" 
-                    className="access-button mb-4 mr-4"
-                    style={{ 
-                      background: 'linear-gradient(135deg, #00d4ff, #0099cc)',
-                      marginBottom: '1rem',
-                      display: 'inline-block'
-                    }}
-                  >
-                    🏆 View Live Leaderboard
-                  </a>
-                  <a 
-                    href="/hackradar-access.html" 
-                    className="access-button"
-                  >
-                    Access Team Portal
-                  </a>
+                  <div className="flex flex-wrap justify-center gap-4">
+                    <a 
+                      href="/technical-journey" 
+                      className="access-button"
+                      style={{ 
+                        background: 'linear-gradient(135deg, #00ff88, #00d4ff)',
+                        display: 'inline-block',
+                        padding: '1rem 2rem',
+                        fontSize: '1.1rem'
+                      }}
+                    >
+                      🚀 How We Built This in 12 Hours
+                    </a>
+                    <a 
+                      href="/hackradar-access.html" 
+                      className="access-button"
+                      style={{ 
+                        background: 'linear-gradient(135deg, #a855f7, #3b82f6)',
+                        display: 'inline-block',
+                        padding: '1rem 2rem',
+                        fontSize: '1.1rem'
+                      }}
+                    >
+                      🔓 Access Team Portal
+                    </a>
+                  </div>
                 </motion.div>
               </main>
             </div>
