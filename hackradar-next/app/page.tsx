@@ -63,6 +63,7 @@ export default function Home() {
         feasibility_signal: number;
         originality: number;
         impact_convert: number;
+        submission_readiness: number;
         final_score: number;
       };
       evidence: string[];
@@ -575,10 +576,14 @@ export default function Home() {
                     
                     {/* Display current score from latest timeline entry */}
                     {timeline.length > 0 && (() => {
-                      // Find the latest entry with a score
-                      const latestWithScore = [...timeline]
-                        .reverse()
+                      // Find the latest entry with a score (timeline is already sorted newest first)
+                      const latestWithScore = timeline
                         .find(entry => entry.evaluation?.scores?.final_score !== undefined);
+                      
+                      // Debug: Log which entry is being used for display
+                      if (latestWithScore) {
+                        console.log('💯 [UI] Displaying scores from entry:', latestWithScore._id, 'Score:', latestWithScore.evaluation?.scores?.final_score, 'Created:', latestWithScore.createdAt);
+                      }
                       
                       if (latestWithScore?.evaluation?.scores) {
                         const scores = latestWithScore.evaluation.scores;
@@ -626,13 +631,13 @@ export default function Home() {
                                 <div>
                                   <div style={{ color: '#999', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Feasibility</div>
                                   <div style={{ color: '#00d4ff', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                                    {scores.feasibility_signal}/10
+                                    {scores.feasibility_signal}/15
                                   </div>
                                 </div>
                                 <div>
                                   <div style={{ color: '#999', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Originality</div>
                                   <div style={{ color: '#00d4ff', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                                    {scores.originality}/10
+                                    {scores.originality}/15
                                   </div>
                                 </div>
                                 <div>
@@ -644,8 +649,7 @@ export default function Home() {
                                 <div>
                                   <div style={{ color: '#999', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Readiness</div>
                                   <div style={{ color: '#00d4ff', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                                    {/* Readiness is calculated separately - use 0 for now */}
-                                    0/15
+                                    {scores.submission_readiness || 0}/15
                                   </div>
                                 </div>
                               </div>
