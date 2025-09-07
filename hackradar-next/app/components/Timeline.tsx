@@ -151,21 +151,11 @@ export default function Timeline({ entries, teamName }: TimelineProps) {
               {entry.evaluation && (
                 <div className="evaluation-feedback">
                   {entry.evaluation.evidence?.length > 0 && (
-                    <div className="feedback-section strengths">
-                      <strong>✅ Strengths:</strong>
+                    <div className="feedback-section current-progress">
+                      <strong>🚀 Current Progress:</strong>
                       <ul>
                         {entry.evaluation.evidence.map((s, i) => (
                           <li key={i}>{s}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {entry.evaluation.gaps?.length > 0 && (
-                    <div className="feedback-section recommendations">
-                      <strong>💡 Areas for Improvement:</strong>
-                      <ul>
-                        {entry.evaluation.gaps.map((r, i) => (
-                          <li key={i}>{r}</li>
                         ))}
                       </ul>
                     </div>
@@ -182,6 +172,21 @@ export default function Timeline({ entries, teamName }: TimelineProps) {
                       <div>Submission Readiness: <span>{entry.evaluation.scores.submission_readiness || 0}/15</span></div>
                     </div>
                   </div>
+                  
+                  {/* Separate Areas for Improvement Section */}
+                  {entry.evaluation.gaps?.length > 0 && (
+                    <div className="improvement-recommendations">
+                      <h4>🎯 How to Improve Your Score</h4>
+                      <div className="improvement-list">
+                        {entry.evaluation.gaps.map((gap, i) => (
+                          <div key={i} className="improvement-item">
+                            <span className="improvement-icon">→</span>
+                            <span>{gap}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Show AI explanation if available */}
                   {entry.evaluation.raw_ai_response && (() => {
@@ -376,6 +381,10 @@ export default function Timeline({ entries, teamName }: TimelineProps) {
           margin-bottom: 0.5rem;
         }
         
+        .current-progress strong {
+          color: #00ff88;
+        }
+        
         .feedback-section ul {
           margin: 0;
           padding-left: 1.5rem;
@@ -436,6 +445,49 @@ export default function Timeline({ entries, teamName }: TimelineProps) {
           padding: 0.75rem;
           border-radius: 6px;
           border-left: 3px solid #00ff88;
+        }
+        
+        .improvement-recommendations {
+          margin-top: 1.5rem;
+          padding: 1rem;
+          background: rgba(255, 165, 0, 0.05);
+          border: 1px solid rgba(255, 165, 0, 0.3);
+          border-radius: 8px;
+        }
+        
+        .improvement-recommendations h4 {
+          color: #ffa500;
+          margin: 0 0 1rem 0;
+          font-size: 1rem;
+          font-weight: bold;
+        }
+        
+        .improvement-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+        
+        .improvement-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+          padding: 0.75rem;
+          background: rgba(255, 165, 0, 0.1);
+          border-radius: 6px;
+          border-left: 3px solid #ffa500;
+        }
+        
+        .improvement-icon {
+          color: #ffa500;
+          font-weight: bold;
+          flex-shrink: 0;
+          margin-top: 0.1rem;
+        }
+        
+        .improvement-item span:last-child {
+          color: #e0e0e0;
+          line-height: 1.4;
         }
         
         .timeline-text {

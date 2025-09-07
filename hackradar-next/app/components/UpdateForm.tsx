@@ -227,13 +227,13 @@ export default function UpdateForm({ projectId, websiteUrl, onSubmit }: UpdateFo
         .update-form-container {
           display: flex;
           flex-direction: column;
-          gap: 1.5rem;
+          gap: 2rem;
         }
 
         .form-section {
           display: flex;
           flex-direction: column;
-          gap: 0.5rem;
+          gap: 0.75rem;
         }
 
         .form-label {
@@ -252,14 +252,15 @@ export default function UpdateForm({ projectId, websiteUrl, onSubmit }: UpdateFo
 
         .text-input {
           width: 100%;
-          padding: 0.75rem;
+          padding: 1rem;
           background: rgba(0, 0, 0, 0.3);
           border: 1px solid rgba(0, 212, 255, 0.3);
-          border-radius: 8px;
+          border-radius: 12px;
           color: #ffffff;
           font-size: 1rem;
           transition: all 0.3s ease;
           font-family: inherit;
+          line-height: 1.5;
         }
 
         .text-input:focus {
@@ -369,10 +370,10 @@ export default function UpdateForm({ projectId, websiteUrl, onSubmit }: UpdateFo
 
         .submit-btn {
           width: 100%;
-          padding: 1rem;
+          padding: 1.25rem;
           background: linear-gradient(45deg, #00d4ff, #00ff88);
           border: none;
-          border-radius: 8px;
+          border-radius: 12px;
           color: #1a1a2e;
           font-size: 1.1rem;
           font-weight: bold;
@@ -382,6 +383,7 @@ export default function UpdateForm({ projectId, websiteUrl, onSubmit }: UpdateFo
           justify-content: center;
           gap: 0.5rem;
           transition: all 0.3s ease;
+          margin-top: 0.5rem;
         }
 
         .submit-btn:hover:not(:disabled) {

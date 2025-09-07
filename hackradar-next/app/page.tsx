@@ -491,8 +491,8 @@ export default function Home() {
                   <div className="submission-section">
                     <h2 className="text-2xl font-bold text-cyan-400 mb-6">Create or Join Your Team</h2>
                     
-                    <div className="team-input">
-                      <label>TEAM NAME</label>
+                    <div className="team-input" style={{ marginBottom: '2rem' }}>
+                      <label style={{ marginBottom: '0.75rem', display: 'block' }}>TEAM NAME</label>
                       <input
                         type="text"
                         value={teamName}
@@ -505,6 +505,7 @@ export default function Home() {
                         className="team-name-input"
                         placeholder="Enter your team name"
                         autoFocus
+                        style={{ marginBottom: '0' }}
                       />
                     </div>
 
@@ -593,12 +594,13 @@ export default function Home() {
                           }}>
                             <div style={{ textAlign: 'center' }}>
                               <div style={{ 
-                                fontSize: '3rem', 
+                                fontSize: '4rem', 
                                 fontWeight: 'bold',
                                 background: 'linear-gradient(45deg, #00d4ff, #00ff88)',
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
-                                marginBottom: '0.5rem'
+                                marginBottom: '0.5rem',
+                                textShadow: '0 0 20px rgba(0, 212, 255, 0.3)'
                               }}>
                                 {scores.final_score}/100
                               </div>
@@ -607,41 +609,41 @@ export default function Home() {
                                 display: 'grid',
                                 gridTemplateColumns: 'repeat(3, 1fr)',
                                 gap: '1rem',
-                                fontSize: '0.9rem'
+                                fontSize: '1rem'
                               }}>
                                 <div>
-                                  <div style={{ color: '#666' }}>Clarity</div>
-                                  <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
+                                  <div style={{ color: '#999', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Clarity</div>
+                                  <div style={{ color: '#00d4ff', fontWeight: 'bold', fontSize: '1.2rem' }}>
                                     {scores.clarity}/15
                                   </div>
                                 </div>
                                 <div>
-                                  <div style={{ color: '#666' }}>Problem</div>
-                                  <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
+                                  <div style={{ color: '#999', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Problem</div>
+                                  <div style={{ color: '#00d4ff', fontWeight: 'bold', fontSize: '1.2rem' }}>
                                     {scores.problem_value}/20
                                   </div>
                                 </div>
                                 <div>
-                                  <div style={{ color: '#666' }}>Feasibility</div>
-                                  <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
+                                  <div style={{ color: '#999', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Feasibility</div>
+                                  <div style={{ color: '#00d4ff', fontWeight: 'bold', fontSize: '1.2rem' }}>
                                     {scores.feasibility_signal}/10
                                   </div>
                                 </div>
                                 <div>
-                                  <div style={{ color: '#666' }}>Originality</div>
-                                  <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
+                                  <div style={{ color: '#999', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Originality</div>
+                                  <div style={{ color: '#00d4ff', fontWeight: 'bold', fontSize: '1.2rem' }}>
                                     {scores.originality}/10
                                   </div>
                                 </div>
                                 <div>
-                                  <div style={{ color: '#666' }}>Impact</div>
-                                  <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
+                                  <div style={{ color: '#999', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Impact</div>
+                                  <div style={{ color: '#00d4ff', fontWeight: 'bold', fontSize: '1.2rem' }}>
                                     {scores.impact_convert}/20
                                   </div>
                                 </div>
                                 <div>
-                                  <div style={{ color: '#666' }}>Readiness</div>
-                                  <div style={{ color: '#00d4ff', fontWeight: 'bold' }}>
+                                  <div style={{ color: '#999', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Readiness</div>
+                                  <div style={{ color: '#00d4ff', fontWeight: 'bold', fontSize: '1.2rem' }}>
                                     {/* Readiness is calculated separately - use 0 for now */}
                                     0/15
                                   </div>
@@ -830,9 +832,6 @@ export default function Home() {
                       </div>
                     </div>
                     
-                    <div className="mb-8 text-cyan-400 text-sm">
-                      Project ID: {project._id}
-                    </div>
                     
                     <UpdateForm 
                       projectId={project._id}
