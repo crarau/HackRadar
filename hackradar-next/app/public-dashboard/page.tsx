@@ -14,10 +14,17 @@ interface TeamScore {
   _id: string;
   teamName: string;
   combinedScore: number;
-  technicalScore: number;
-  businessScore: number;
-  presentationScore: number;
+  scores?: {
+    clarity: number;
+    problem_value: number;
+    feasibility: number;
+    originality: number;
+    impact: number;
+    submission_readiness: number;
+    final_score: number;
+  };
   lastUpdated: string;
+  entryId?: string | null;
 }
 
 const queryClient = new QueryClient({
@@ -42,61 +49,19 @@ const getRankColor = (position: number): { bg: string; border: string } => {
 // Store for maintaining score history
 const scoreHistory: { [key: string]: number } = {};
 
-// Mock data generator with stable scores
-const generateMockData = (): TeamScore[] => {
-  // Base teams with clear score separation to prevent rank swapping
-  const baseTeams = [
-    { id: 'team-0', name: 'InnovateTech Solutions', technical: 90, business: 88, presentation: 92 }, // ~90
-    { id: 'team-1', name: 'CodeCrafters United', technical: 85, business: 87, presentation: 86 }, // ~86
-    { id: 'team-2', name: 'Digital Pioneers', technical: 82, business: 80, presentation: 83 }, // ~82
-    { id: 'team-3', name: 'Future Builders', technical: 78, business: 77, presentation: 79 }, // ~78
-    { id: 'team-4', name: 'Tech Revolutionaries', technical: 74, business: 73, presentation: 75 }, // ~74
-    { id: 'team-5', name: 'Innovation Squad', technical: 70, business: 69, presentation: 71 }, // ~70
-  ];
-
-  const teams = baseTeams.map((team) => {
-    // Initialize score history if not exists
-    if (!scoreHistory[team.id]) {
-      const initial = Math.round((team.technical + team.business + team.presentation) / 3);
-      scoreHistory[team.id] = initial;
-    }
-
-    // 20% chance of change to reduce flickering
-    const shouldChange = Math.random() < 0.2;
-    
-    if (shouldChange) {
-      // Smaller variations to prevent constant position changes
-      const variation = (Math.random() * 4 - 2); // -2 to +2 points
-      scoreHistory[team.id] = Math.max(60, Math.min(95, scoreHistory[team.id] + variation));
-    }
-
-    const combinedScore = Math.round(scoreHistory[team.id]);
-    
-    // Distribute the combined score across categories
-    const total = combinedScore * 3;
-    const technical = Math.round(total * 0.35);
-    const business = Math.round(total * 0.32);
-    const presentation = total - technical - business;
-    
-    return {
-      _id: team.id,
-      teamName: team.name,
-      technicalScore: technical,
-      businessScore: business,
-      presentationScore: presentation,
-      combinedScore: combinedScore,
-      lastUpdated: new Date().toISOString(),
-    };
-  });
+// Fetch real leaderboard data from API
+const fetchLeaderboardData = async (): Promise<TeamScore[]> => {
+  console.log('🏆 [Dashboard] Fetching leaderboard data...');
   
-  // Stable sort: when scores are equal, maintain order by team ID to prevent flickering
-  return teams.sort((a, b) => {
-    if (b.combinedScore !== a.combinedScore) {
-      return b.combinedScore - a.combinedScore;
-    }
-    // If scores are equal, sort by team ID for stability
-    return a._id.localeCompare(b._id);
-  });
+  const response = await fetch('/api/leaderboard');
+  if (!response.ok) {
+    throw new Error('Failed to fetch leaderboard data');
+  }
+  
+  const data = await response.json();
+  console.log(`📊 [Dashboard] Received ${data.teams?.length || 0} teams`);
+  
+  return data.teams || [];
 };
 
 // Memoized Chart Component - only re-renders when props actually change
@@ -164,13 +129,16 @@ const TeamChart = React.memo(({
             if (!context || !Array.isArray(context) || !context[0]) return '';
             const index = context[0].dataIndex;
             const team = teams[index];
-            if (!team) return '';
+            if (!team || !team.scores) return [`Combined: ${team.combinedScore}%`];
             
             return [
               `Combined: ${team.combinedScore}%`,
-              `Technical: ${team.technicalScore}%`,
-              `Business: ${team.businessScore}%`,
-              `Presentation: ${team.presentationScore}%`
+              `Clarity: ${team.scores.clarity}/15`,
+              `Problem Value: ${team.scores.problem_value}/20`,
+              `Feasibility: ${team.scores.feasibility}/15`,
+              `Originality: ${team.scores.originality}/15`,
+              `Impact: ${team.scores.impact}/20`,
+              `Readiness: ${team.scores.submission_readiness}/15`
             ];
           },
         },
@@ -283,7 +251,7 @@ const useTeamData = () => {
   // Query for data
   const { data: fetchedTeams = [], isLoading } = useQuery({
     queryKey: ['team-scores'],
-    queryFn: generateMockData,
+    queryFn: fetchLeaderboardData,
     refetchInterval: 3000, // Check every 3 seconds
   });
 
