@@ -169,7 +169,7 @@ export default function Timeline({ entries, teamName }: TimelineProps) {
                       <div>Feasibility: <span>{entry.evaluation.scores.feasibility_signal}/15</span></div>
                       <div>Originality: <span>{entry.evaluation.scores.originality}/15</span></div>
                       <div>Impact: <span>{entry.evaluation.scores.impact_convert}/20</span></div>
-                      <div>Submission Readiness: <span>{entry.evaluation.scores.submission_readiness || 0}/15</span></div>
+                      <div>Submission Readiness: <span>{(entry.evaluation.scores as any).submission_readiness || 0}/15</span></div>
                     </div>
                   </div>
                   
