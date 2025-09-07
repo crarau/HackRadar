@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start -p 7843",
     "lint": "eslint",
-    "prepare": "husky"
+    "prepare": "husky",
+    "vercel-build": "next build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
