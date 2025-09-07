@@ -1,56 +1,23 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Fix for webpack module resolution issues
+  // Minimal webpack configuration for compatibility
   webpack: (config, { isServer }) => {
-    // Disable webpack cache to prevent corruption
-    config.cache = false;
-    
-    // Fix for module resolution issues
-    config.resolve = {
-      ...config.resolve,
-      fallback: {
-        ...config.resolve?.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-      },
-    };
-
-    // Ensure proper chunk splitting
+    // Only add fallbacks for browser builds
     if (!isServer) {
-      config.optimization = {
-        ...config.optimization,
-        runtimeChunk: 'single',
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            default: false,
-            vendors: false,
-            vendor: {
-              name: 'vendor',
-              chunks: 'all',
-              test: /node_modules/,
-              priority: 20
-            },
-            common: {
-              name: 'common',
-              minChunks: 2,
-              chunks: 'all',
-              priority: 10,
-              reuseExistingChunk: true,
-              enforce: true
-            }
-          }
-        }
+      config.resolve = {
+        ...config.resolve,
+        fallback: {
+          ...config.resolve?.fallback,
+          fs: false,
+          net: false,
+          tls: false,
+        },
       };
     }
 
     return config;
   },
-
-  // Fix for workspace root detection
-  outputFileTracingRoot: "/home/chipdev/HackRadar",
 
   // Externalize server packages to prevent bundling issues
   serverExternalPackages: ['mongodb', '@anthropic-ai/sdk'],
