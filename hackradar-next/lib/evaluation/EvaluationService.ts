@@ -140,7 +140,7 @@ export class EvaluationService {
     }
     
     // Build message history from all previous submissions - FORCE SUCCESS
-    let messageHistory = [];
+    let messageHistory: any[] = [];
     try {
       messageHistory = this.buildMessageHistory(previousSubmissions as Array<{
       text?: string;
@@ -163,7 +163,7 @@ export class EvaluationService {
     }>);
     } catch (historyError) {
       console.error('❌ [EvaluationService] MESSAGE HISTORY BUILD FAILED - CONTINUING WITHOUT HISTORY:');
-      console.error('  Error:', historyError?.message || 'Unknown');
+      console.error('  Error:', (historyError as Error)?.message || 'Unknown');
       messageHistory = []; // Continue without history rather than failing completely
     }
     const logger = getDebugLogger();
@@ -221,8 +221,8 @@ export class EvaluationService {
       
     } catch (evalError) {
       console.error('❌ [EvaluationService] EVALUATOR FAILED - FORCING BASIC EVALUATION:');
-      console.error('  Error:', evalError?.message || 'Unknown');
-      console.error('  Stack:', evalError?.stack || 'No stack');
+      console.error('  Error:', (evalError as Error)?.message || 'Unknown');
+      console.error('  Stack:', (evalError as Error)?.stack || 'No stack');
       
       // FORCE BASIC EVALUATION WITHOUT CONVERSATION HISTORY
       console.log('🔄 [EvaluationService] Attempting basic evaluation without history...');
@@ -248,7 +248,7 @@ export class EvaluationService {
         console.log('✅ [EvaluationService] Basic evaluation succeeded');
       } catch (basicError) {
         console.error('❌ [EvaluationService] EVEN BASIC EVALUATION FAILED:');
-        console.error('  Error:', basicError?.message || 'Unknown');
+        console.error('  Error:', (basicError as Error)?.message || 'Unknown');
         throw basicError; // Re-throw to be caught by timeline API
       }
     }
