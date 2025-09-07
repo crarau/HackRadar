@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiZap, FiUploadCloud, FiTrendingUp, FiLogOut, FiRefreshCw, FiEdit2, FiCheck, FiX as FiCancel, FiLink } from 'react-icons/fi';
+import { IconBrandGoogle } from '@tabler/icons-react';
 import toast, { Toaster } from 'react-hot-toast';
 import Timeline from './components/Timeline';
 import UpdateForm from './components/UpdateForm';
@@ -429,13 +430,15 @@ export default function Home() {
 
                   <div className="cta-container">
                     <div style={{
-                      transform: 'scale(1.5)',
-                      padding: '1.5rem',
-                      background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.1))',
-                      borderRadius: '20px',
-                      border: '2px solid rgba(0, 212, 255, 0.3)',
-                      boxShadow: '0 10px 40px rgba(0, 212, 255, 0.2)',
-                      animation: 'pulse 2s ease-in-out infinite'
+                      transform: 'scale(1.1)',
+                      padding: '0',
+                      background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.06), rgba(0, 255, 136, 0.06))',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(0, 212, 255, 0.15)',
+                      boxShadow: '0 6px 24px rgba(0, 212, 255, 0.12)',
+                      animation: 'pulse 2s ease-in-out infinite',
+                      display: 'flex',
+                      justifyContent: 'center'
                     }}>
                       <GoogleLogin
                         onSuccess={handleLoginSuccess}
@@ -490,28 +493,16 @@ export default function Home() {
                   transition={{ duration: 0.5, delay: 0.8 }}
                   className="access-button-container"
                 >
-                  <div className="flex flex-wrap justify-center gap-4">
+                  <div className="access-buttons-container">
                     <a 
                       href="/technical-journey" 
                       className="access-button"
-                      style={{ 
-                        background: 'linear-gradient(135deg, #00ff88, #00d4ff)',
-                        display: 'inline-block',
-                        padding: '1rem 2rem',
-                        fontSize: '1.1rem'
-                      }}
                     >
                       🚀 How We Built This in 12 Hours
                     </a>
                     <a 
                       href="/hackradar-access.html" 
                       className="access-button"
-                      style={{ 
-                        background: 'linear-gradient(135deg, #a855f7, #3b82f6)',
-                        display: 'inline-block',
-                        padding: '1rem 2rem',
-                        fontSize: '1.1rem'
-                      }}
                     >
                       🔓 Access Team Portal
                     </a>
